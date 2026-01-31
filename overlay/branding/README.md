@@ -26,8 +26,17 @@ deploy 阶段会将本配置同步到 Chromium 的 `args.gn`（路径由 SIMPRIN
 ## 资源
 
 - 应用 002 后，目录 `chrome/app/theme/simprint/` 与 `simprint/win/` 由补丁自动创建。
-- 图标（.ico）不在补丁中：deploy 阶段会从 Chromium `theme/chromium/win/` 复制到 `theme/simprint/win/` 并重命名；发布前可替换为自己的图标。
+- 图标（.ico）：deploy 阶段优先从 `overlay/branding/icons/` 复制到 `theme/simprint/win/`，缺失时从 Chromium `theme/chromium/win/` 复制并重命名；发布前可替换为自己的图标。
+- 磁贴图（tiles）：deploy 会从 `overlay/branding/icons/tiles/`（如 `Logo.png`、`SmallLogo.png`）复制到 `theme/simprint/win/tiles/`，缺失时从 Chromium 的 `chromium/win/tiles/` 复制。
+- 字符串与矢量图标：deploy 会复制/生成 `components_simprint_strings.grd`、`vector_icons/simprint/`、`chrome/app/simprint_strings.grd` 及 `simprint_strings_*.xtb`，无需手改。
+
+**推荐流程**：执行一次 `apply_deploy`（或先 `apply` 再 `deploy`）后，Chromium 树即可直接 `autoninja -C out\Release chrome`，无需额外手动步骤。
 
 ## 统一入口
 
-由 driver 调用：`python overlay/branding/run.py apply|deploy|build`。apply 打补丁；deploy 执行 `scripts/deploy_resources.py`（复制图标）与 `scripts/sync_gn_args.py`（将 branding.config 同步到 args.gn）；build 当前无操作。
+由 driver 调用：`python overlay/branding/run.py apply|deploy|apply_deploy|build`。
+
+- **apply**：打补丁（含 .patch.j2 渲染）。
+- **deploy**：执行 `scripts/deploy_resources.py`（复制图标、tiles、strings、vector_icons）与 `scripts/sync_gn_args.py`（将 branding.config 同步到 args.gn）。**需先 apply**，否则 theme/simprint/BRANDING 不存在会报错。
+- **apply_deploy**：先 apply 再 deploy，一次完成，完成后即可构建。
+- **build**：当前无操作。

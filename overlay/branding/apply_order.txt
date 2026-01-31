@@ -3,3 +3,4 @@
 001-executable-name.patch
 002-simprint-icon.patch.j2
 003-install-static-simprint.patch
+004-installer-string-rc-simprint.patch
