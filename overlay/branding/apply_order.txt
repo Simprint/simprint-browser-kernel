@@ -1,0 +1,5 @@
+# branding 单元内补丁应用顺序（一行一个文件名）
+# .patch.j2 为 Jinja2 模板，apply 时用 branding.config 渲染后再应用
+001-executable-name.patch
+002-simprint-icon.patch.j2
+003-install-static-simprint.patch

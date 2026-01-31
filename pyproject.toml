@@ -1,0 +1,9 @@
+[project]
+name = "simprint-browser-kernel"
+version = "0.1.0"
+description = "Simprint 指纹浏览器定制与发布：补丁、模板、脚本与配置"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "jinja2>=3.1",
+]

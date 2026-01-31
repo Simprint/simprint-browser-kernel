@@ -1,17 +1,14 @@
-# ============================================
-# Simprint 工作目录：默认忽略全部，仅跟踪白名单内容
-# ============================================
-*
-.*
-!.gitignore
-!.gitattributes
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+*.pyo
 
-!README.md
-!docs/
-!docs/**
-!patches/
-!patches/**
-!scripts/
-!scripts/**
-!config/
-!config/**
+# Local / test
+*-rendered.patch
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

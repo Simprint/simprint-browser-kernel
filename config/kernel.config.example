@@ -1,9 +1,0 @@
-# Simprint 内核配置示例
-# 复制为 kernel.config（或 .env）后按需修改，脚本通过此文件或环境变量读取 Chromium 路径等。
-
-# Chromium 源码根目录（含 chrome/VERSION、out/ 的目录，即 gclient 拉取后的 src）
-# 例如：../simprint-browser/src 或 D:/chromium/src
-SIMPRINT_CHROMIUM_ROOT=
-
-# 可选：构建产物目录名（相对 Chromium 根目录），如 out/Release、out/Default
-# SIMPRINT_OUT_DIR=out/Release

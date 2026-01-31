@@ -1,0 +1,106 @@
+diff --git a/build/config/chrome_build.gni b/build/config/chrome_build.gni
+--- a/build/config/chrome_build.gni
++++ b/build/config/chrome_build.gni
+@@ -81,6 +81,9 @@
+   # chrome/app/theme.
+   #
+   # `branding_path_product` must not contain slashes.
++  # Simprint custom branding (icon, BRANDING file under chrome/app/theme/{{ branding_path_component }}/).
++  is_simprint_branded = false
++
+   if (is_chrome_for_testing) {
+     if (is_chrome_for_testing_branded) {
+       branding_path_component = "google_chrome/google_chrome_for_testing"
+@@ -94,6 +94,9 @@
+   } else if (is_internal_chrome_branded) {
+     branding_path_component = "google_chrome"
+     branding_path_product = "google_chrome"
++  } else if (is_simprint_branded) {
++    branding_path_component = "{{ branding_path_component }}"
++    branding_path_product = "{{ branding_path_component }}"
+   } else {
+     branding_path_component = "chromium"
+     branding_path_product = "chromium"
+diff --git a/build/BUILD.gn b/build/BUILD.gn
+--- a/build/BUILD.gn
++++ b/build/BUILD.gn
+@@ -52,6 +52,12 @@ buildflag_header("branding_buildflags") {
+  } else {
+     flags += [ "GOOGLE_CHROME_FOR_TESTING_BRANDING=false" ]
+   }
+ 
++  if (is_simprint_branded) {
++    flags += [ "SIMPRINT_BRANDING=true" ]
++  } else {
++    flags += [ "SIMPRINT_BRANDING=false" ]
++  }
++
+   flags += [ "ENABLE_BUILTIN_SEARCH_PROVIDER_ASSETS=$enable_builtin_search_provider_assets" ]
+ }
+diff --git a/chrome/app/chrome_dll.rc b/chrome/app/chrome_dll.rc
+--- a/chrome/app/chrome_dll.rc
++++ b/chrome/app/chrome_dll.rc
+@@ -174,5 +174,7 @@ IDR_X004_DEV        ICON                        "theme\google_chrome\win\chrome_de
+  #elif BUILDFLAG(GOOGLE_CHROME_FOR_TESTING_BRANDING)
+  IDR_MAINFRAME       ICON                        "theme\google_chrome\google_chrome_for_testing\win\chrome.ico"
+-#else
++#elif BUILDFLAG(SIMPRINT_BRANDING)
++IDR_MAINFRAME       ICON                        "theme\{{ branding_path_component }}\win\{{ branding_path_component }}.ico"
++#else
+  IDR_MAINFRAME       ICON                        "theme\chromium\win\chromium.ico"
+  #endif
+diff --git a/chrome/app/chrome_exe.rc b/chrome/app/chrome_exe.rc
+--- a/chrome/app/chrome_exe.rc
++++ b/chrome/app/chrome_exe.rc
+@@ -56,5 +56,7 @@ IDR_MAINFRAME_4         ICON       "theme\\google_chrome\\win\\placeholder.ico
+  #elif BUILDFLAG(GOOGLE_CHROME_FOR_TESTING_BRANDING)
+  IDR_MAINFRAME           ICON       "theme\\google_chrome\\google_chrome_for_testing\\win\\chrome.ico"
+-#else
++#elif BUILDFLAG(SIMPRINT_BRANDING)
++IDR_MAINFRAME           ICON       "theme\\{{ branding_path_component }}\\win\\{{ branding_path_component }}.ico"
++#else
+  IDR_MAINFRAME           ICON       "theme\\chromium\\win\\chromium.ico"
+  #endif
+@@ -76,6 +76,11 @@ IDR_X005_BETA           ICON       "theme\\google_chrome\\win\\chrome_beta.ico
+  IDR_X007_PDF_DOC        ICON       "theme\\google_chrome\\win\\chrome_pdf.ico"
+-#else
++#elif BUILDFLAG(SIMPRINT_BRANDING)
++IDR_X001_APP_LIST       ICON       "theme\\{{ branding_path_component }}\\win\\app_list.ico"
++IDR_X003_INCOGNITO      ICON       "theme\\{{ branding_path_component }}\\win\\incognito.ico"
++IDR_X006_HTML_DOC       ICON       "theme\\{{ branding_path_component }}\\win\\{{ branding_path_component }}_doc.ico"
++IDR_X007_PDF_DOC        ICON       "theme\\{{ branding_path_component }}\\win\\{{ branding_path_component }}_pdf.ico"
++#else
+  IDR_X001_APP_LIST       ICON       "theme\\chromium\\win\\app_list.ico"
+  IDR_X003_INCOGNITO      ICON       "theme\\chromium\\win\\incognito.ico"
+  IDR_X006_HTML_DOC       ICON       "theme\\chromium\\win\\chromium_doc.ico"
+  IDR_X007_PDF_DOC        ICON       "theme\\chromium\\win\\chromium_pdf.ico"
+  #endif
+diff --git a/chrome/app/theme/{{ branding_path_component }}/BRANDING b/chrome/app/theme/{{ branding_path_component }}/BRANDING
+new file mode 100644
+--- /dev/null
++++ b/chrome/app/theme/{{ branding_path_component }}/BRANDING
+@@ -0,0 +1,10 @@
++COMPANY_FULLNAME={{ product_display_name }}
++COMPANY_SHORTNAME={{ product_display_name }}
++PRODUCT_FULLNAME={{ product_display_name }}
++PRODUCT_SHORTNAME={{ product_display_name }}
++PRODUCT_INSTALLER_FULLNAME={{ product_display_name }} Installer
++PRODUCT_INSTALLER_SHORTNAME={{ product_display_name }} Installer
++COPYRIGHT=Copyright @LASTCHANGE_YEAR@ {{ product_display_name }}. All rights reserved.
++MAC_BUNDLE_ID=org.{{ branding_path_component }}.{{ product_display_name }}
++MAC_CREATOR_CODE=Simp
++MAC_TEAM_ID=
+diff --git a/chrome/app/theme/{{ branding_path_component }}/win/README b/chrome/app/theme/{{ branding_path_component }}/win/README
+new file mode 100644
+--- /dev/null
++++ b/chrome/app/theme/{{ branding_path_component }}/win/README
+@@ -0,0 +1,8 @@
++Place {{ product_display_name }} Windows icons here. Required when is_simprint_branded = true.
++
++  {{ branding_path_component }}.ico     - Main app icon (required)
++  app_list.ico     - App list
++  incognito.ico    - Incognito
++  {{ branding_path_component }}_doc.ico - HTML document
++  {{ branding_path_component }}_pdf.ico - PDF document
++
++For a quick test, copy from chromium: e.g. cp ../chromium/win/chromium.ico {{ branding_path_component }}.ico (and similarly for others).

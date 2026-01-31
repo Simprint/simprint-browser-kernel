@@ -1,0 +1,6 @@
+# 执行顺序：integration（接入层）→ overlay（对源码的修改）→ projects（高阶定制功能）
+# 以 # 开头或空行会被忽略
+integration
+branding
+fingerprint
+shared

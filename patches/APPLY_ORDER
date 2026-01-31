@@ -1,4 +1,0 @@
-# 补丁全局应用顺序：一行一个相对路径（相对本文件所在 patches/ 目录）
-# 在 Chromium 源码根目录（src）下执行 scripts/apply/apply-all.sh 时会按此顺序应用
-branding/001-executable-name.patch
-branding/002-simprint-icon.patch
