@@ -39,6 +39,35 @@ def _deploy_win_icons(theme, kernel_icons, chromium_win, dst_win):
             print("  Warning: missing %s (skipped)" % dst_name)
 
 
+# chrome_unscaled_resources.grd / theme_resources.grd 中 ${branding_path_component}/ 下的 product logo 等
+THEME_PRODUCT_LOGO_FILES = [
+    "product_logo_64.png",
+    "product_logo_128.png",
+    "product_logo_256.png",
+    "product_logo_16.png",
+    "product_logo_22_mono.png",
+    "product_logo_24.png",
+    "product_logo_48.png",
+    "product_logo.svg",
+    "product_logo_animation.svg",
+]
+
+
+def _deploy_theme_product_logos(theme, kernel_icons, chromium_src):
+    """将 theme/chromium/ 下的 product logo 等复制到 theme/simprint/，供 chrome_unscaled_resources.grd 等使用。"""
+    src_dir = theme / "chromium"
+    dst_dir = theme / "simprint"
+    dst_dir.mkdir(parents=True, exist_ok=True)
+    for name in THEME_PRODUCT_LOGO_FILES:
+        src = src_dir / name
+        dst = dst_dir / name
+        if src.is_file():
+            shutil.copy2(src, dst)
+            print("  theme/simprint/%s (from chromium)" % name)
+        else:
+            print("  Warning: missing theme/chromium/%s (skipped)" % name)
+
+
 def _deploy_tiles(theme, kernel_icons, chromium_src):
     kernel_tiles = kernel_icons / "tiles"
     chromium_tiles = theme / "chromium" / "win" / "tiles"
@@ -71,20 +100,30 @@ def _deploy_components_strings(chromium_src):
 
 
 def _deploy_resource_ids_spec(chromium_src):
-    """Ensure resource_ids.spec has first id for components_simprint_strings.grd (grit 需要)."""
+    """Ensure resource_ids.spec has first id for simprint GRD (grit 需要): chrome/app 与 components."""
     spec = chromium_src / "tools" / "gritsettings" / "resource_ids.spec"
     if not spec.is_file():
         return
     text = spec.read_text(encoding="utf-8")
-    if "components_simprint_strings.grd" in text:
-        return
-    # 与 components_chromium_strings 同一起始 id，构建时二选一
-    needle = '  "components/components_google_chrome_strings.grd": {\n    "messages": [7020],\n  },'
-    block = needle + '\n  "components/components_simprint_strings.grd": {\n    "messages": [7020],\n  },'
-    if needle not in text:
-        return
-    spec.write_text(text.replace(needle, block, 1), encoding="utf-8")
-    print("  resource_ids.spec: added components_simprint_strings.grd (messages 7020)")
+    changed = False
+    # chrome/app/simprint_strings.grd，与 chromium_strings 同一起始 id 800
+    if "chrome/app/simprint_strings.grd" not in text:
+        needle = '  "chrome/app/google_chrome_strings.grd": {\n    "messages": [800],\n  },'
+        block = needle + '\n  "chrome/app/simprint_strings.grd": {\n    "messages": [800],\n  },'
+        if needle in text:
+            text = text.replace(needle, block, 1)
+            changed = True
+            print("  resource_ids.spec: added chrome/app/simprint_strings.grd (messages 800)")
+    # components_simprint_strings.grd，与 components_chromium_strings 同一起始 id 7020
+    if "components_simprint_strings.grd" not in text:
+        needle = '  "components/components_google_chrome_strings.grd": {\n    "messages": [7020],\n  },'
+        block = needle + '\n  "components/components_simprint_strings.grd": {\n    "messages": [7020],\n  },'
+        if needle in text:
+            text = text.replace(needle, block, 1)
+            changed = True
+            print("  resource_ids.spec: added components_simprint_strings.grd (messages 7020)")
+    if changed:
+        spec.write_text(text, encoding="utf-8")
 
 
 def _deploy_installer_string_rc_simprint(chromium_src):
@@ -152,6 +191,8 @@ def run(chromium_src, kernel_root, project_root):
 
     print("Deploying theme/simprint/win icons...")
     _deploy_win_icons(theme, kernel_icons, chromium_win, dst_win)
+    print("Deploying theme/simprint/ product logos (chrome_unscaled_resources)...")
+    _deploy_theme_product_logos(theme, kernel_icons, chromium_src)
     print("Deploying theme/simprint/win/tiles...")
     _deploy_tiles(theme, kernel_icons, chromium_src)
     print("Deploying components_simprint_strings.grd...")
