@@ -5,4 +5,5 @@
 003-install-static-simprint.patch
 004-installer-string-rc-simprint.patch
 005-mini-installer-archive-exe.patch
-006-reorder-imports-exe-name.patch
+006a-reorder-imports-exe-name-sig.patch
+006b-reorder-imports-exe-name-body.patch

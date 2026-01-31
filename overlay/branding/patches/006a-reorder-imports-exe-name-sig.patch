@@ -1,0 +1,10 @@
+diff --git a/build/win/reorder-imports.py b/build/win/reorder-imports.py
+--- a/build/win/reorder-imports.py
++++ b/build/win/reorder-imports.py
+@@ -16,7 +16,7 @@ import pefile
+
+-def reorder_imports(input_dir, output_dir, architecture):
++def reorder_imports(input_dir, output_dir, architecture, exe_name='chrome'):
+   """Swap chrome_elf.dll to be the first import of chrome.exe.
+   Also copy over any related files that might be needed
+   (pdbs, manifests etc.).

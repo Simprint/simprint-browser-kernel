@@ -1,34 +1,25 @@
 diff --git a/build/win/reorder-imports.py b/build/win/reorder-imports.py
 --- a/build/win/reorder-imports.py
 +++ b/build/win/reorder-imports.py
-@@ -16,9 +16,9 @@ import pefile
-
--def reorder_imports(input_dir, output_dir, architecture):
-+def reorder_imports(input_dir, output_dir, architecture, exe_name='chrome'):
-   """Swap chrome_elf.dll to be the first import of chrome.exe.
-   Also copy over any related files that might be needed
-   (pdbs, manifests etc.).
-   """
-   # TODO(thakis): See if there is a reliable way to write the
-   # correct executable in the first place, so that this script
+@@ -22,6 +22,6 @@ def reorder_imports(input_dir, output_dir, architecture, exe_name='chrome'):
    # only needs to verify that and not write a whole new exe.
-
+ 
 -  input_image = os.path.join(input_dir, 'chrome.exe')
 -  output_image = os.path.join(output_dir, 'chrome.exe')
 +  input_image = os.path.join(input_dir, exe_name + '.exe')
 +  output_image = os.path.join(output_dir, exe_name + '.exe')
-
+ 
    # pefile mmap()s the whole executable, and then parses parts of
-@@ -73,12 +73,14 @@ def reorder_imports(input_dir, output_dir, architecture):
-
+@@ -72,7 +72,7 @@ def reorder_imports(input_dir, output_dir, architecture, exe_name='chrome'):
+ 
    pe.write(filename=output_image)
-
+ 
 -  for fname in glob.iglob(os.path.join(input_dir, 'chrome.exe.*')):
 +  for fname in glob.iglob(os.path.join(input_dir, exe_name + '.exe.*')):
      shutil.copy(fname, os.path.join(output_dir, os.path.basename(fname)))
    return 0
-
-
+ 
+@@ -78,6 +78,8 @@ def reorder_imports(input_dir, output_dir, architecture, exe_name='chrome'):
  def main(argv):
    usage = 'reorder_imports.py -i <input_dir> -o <output_dir> -a <target_arch>'
    parser = optparse.OptionParser(usage=usage)
@@ -37,15 +28,14 @@ diff --git a/build/win/reorder-imports.py b/build/win/reorder-imports.py
    parser.add_option('-i', '--input', help='reorder chrome.exe in DIR',
        metavar='DIR')
    parser.add_option('-o', '--output', help='write new chrome.exe to DIR',
-@@ -91,5 +93,5 @@ def main(argv):
-
+@@ -88,5 +90,5 @@ def main(argv):
+ 
    if not opts.input or not opts.output:
      parser.error('Please provide and input and output directory')
 -  return reorder_imports(opts.input, opts.output, opts.arch)
 +  return reorder_imports(opts.input, opts.output, opts.arch, opts.exe)
-
+ 
  if __name__ == "__main__":
-
 diff --git a/chrome/BUILD.gn b/chrome/BUILD.gn
 --- a/chrome/BUILD.gn
 +++ b/chrome/BUILD.gn

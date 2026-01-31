@@ -22,7 +22,8 @@ deploy 阶段会将本配置同步到 Chromium 的 `args.gn`（路径由 SIMPRIN
 | 003-install-static-simprint.patch | install_static 支持 Simprint，避免链接缺失符号 |
 | 004-installer-string-rc-simprint.patch | installer 字符串资源支持 simprint 品牌 |
 | 005-mini-installer-archive-exe.patch | mini_installer_archive 使用 `chrome_executable_name`（simprint.exe/dll），避免 gn 报 “input not generated” |
-| 006-reorder-imports-exe-name.patch | reorder_imports 脚本与 BUILD.gn 传参使用可执行文件名，避免生成 chrome.exe.pdb 而期望 simprint.exe.pdb |
+| 006a-reorder-imports-exe-name-sig.patch | reorder_imports 函数签名增加 exe_name 参数 |
+| 006b-reorder-imports-exe-name-body.patch | reorder_imports 脚本与 BUILD.gn 使用 exe_name，避免生成 chrome.exe.pdb 而期望 simprint.exe.pdb |
 
 顺序见 `apply_order.txt`。`.patch.j2` 在 apply 时先读 config 再渲染，再应用；需 `uv sync` 安装 jinja2。
 
