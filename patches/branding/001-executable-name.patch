@@ -1,0 +1,58 @@
+diff --git a/build/config/chrome_build.gni b/build/config/chrome_build.gni
+index 99758f6df440f..16cf52b791946 100644
+--- a/build/config/chrome_build.gni
++++ b/build/config/chrome_build.gni
+@@ -97,6 +97,11 @@ declare_args() {
+   }
+ }
+ 
++declare_args() {
++  # Custom executable name (e.g. "simprint" -> simprint.exe). Default "chrome".
++  chrome_executable_name = "chrome"
++}
++
+ declare_args() {
+   # The path to the BRANDING file in chrome/app/theme.
+   branding_file_path = "//chrome/app/theme/$branding_path_component/BRANDING"
+diff --git a/chrome/BUILD.gn b/chrome/BUILD.gn
+index 0442a8c03d74f..ea2335e54aafb 100644
+--- a/chrome/BUILD.gn
++++ b/chrome/BUILD.gn
+@@ -86,12 +86,12 @@ if (is_win) {
+     # initialexe/ is used so that the we can reorder imports and write back to
+     # the final destination at $root_out_dir/.
+     inputs = [
+-      "$root_out_dir/initialexe/chrome.exe",
+-      "$root_out_dir/initialexe/chrome.exe.pdb",
++      "$root_out_dir/initialexe/" + chrome_executable_name + ".exe",
++      "$root_out_dir/initialexe/" + chrome_executable_name + ".exe.pdb",
+     ]
+     outputs = [
+-      "$root_out_dir/chrome.exe",
+-      "$root_out_dir/chrome.exe.pdb",
++      "$root_out_dir/" + chrome_executable_name + ".exe",
++      "$root_out_dir/" + chrome_executable_name + ".exe.pdb",
+     ]
+     args = [
+       "-i",
+@@ -149,9 +149,9 @@ if (!is_android && !is_mac) {
+   }
+ 
+   if (is_win) {
+-    _chrome_output_name = "initialexe/chrome"
++    _chrome_output_name = "initialexe/" + chrome_executable_name
+   } else {
+-    _chrome_output_name = "chrome"
++    _chrome_output_name = chrome_executable_name
+   }
+ 
+   executable("chrome_initial") {
+@@ -410,7 +410,7 @@ if (is_win) {
+       "app/startup_timestamps.h",
+     ]
+ 
+-    output_name = "chrome"
++    output_name = chrome_executable_name
+ 
+     deps = [
+       ":chrome_dll_manifest",
