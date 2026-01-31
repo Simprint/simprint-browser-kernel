@@ -4,31 +4,17 @@ out_dir 由环境 SIMPRINT_OUT_DIR 指定，不来自 branding.config。
 """
 import os
 import re
+import sys
 from pathlib import Path
 
+_SCRIPTS_DIR = Path(__file__).resolve().parent
+if str(_SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(_SCRIPTS_DIR))
+import config_loader
+
+load_config_from_project_root = config_loader.load_config_from_project_root
+
 GN_KEYS = ("chrome_executable_name", "is_simprint_branded")
-
-
-def _parse_branding_config(path: Path) -> dict:
-    """解析 branding.config：key = value，支持 # 注释。"""
-    out = {}
-    if not path.is_file():
-        return out
-    with open(path, encoding="utf-8") as f:
-        for line in f:
-            line = line.split("#")[0].strip()
-            if not line:
-                continue
-            m = re.match(r"^(\w+)\s*=\s*(.+)$", line)
-            if not m:
-                continue
-            key, value = m.group(1), m.group(2).strip().strip("'\"").strip()
-            if value.lower() == "true":
-                value = True
-            elif value.lower() == "false":
-                value = False
-            out[key] = value
-    return out
 
 
 def _format_gn_value(value) -> str:
@@ -52,17 +38,10 @@ def _write_args_gn(path: Path, lines: list[str]) -> None:
 
 def run(chromium_src: Path, kernel_root: Path, project_root: Path) -> None:
     """读取 branding.config，合并到 Chromium args.gn。out_dir 来自环境 SIMPRINT_OUT_DIR，默认 out/Default。"""
-    config_file = project_root / "branding.config"
-    if not config_file.is_file():
-        config_file = project_root / "branding.config.example"
-    if not config_file.is_file():
-        print("  No branding.config or branding.config.example, skip sync_gn_args.")
-        return
-
-    cfg = _parse_branding_config(config_file)
+    cfg = load_config_from_project_root(project_root)
     to_set = {k: v for k, v in cfg.items() if k in GN_KEYS}
     if not to_set:
-        print("  No branding gn keys in config, skip sync_gn_args.")
+        print("  No branding.config or no gn keys in config, skip sync_gn_args.")
         return
 
     out_dir = os.environ.get("SIMPRINT_OUT_DIR", "out/Default").strip("/")

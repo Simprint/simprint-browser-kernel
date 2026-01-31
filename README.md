@@ -38,13 +38,80 @@ Chromium 源码与构建产物**不放在本目录**，需单独通过 gclient �
 
 ## 使用方式
 
-1. 克隆或拉取本仓库到本地。
-2. 复制 `driver/driver.config.example` 为 `driver/driver.config` 并填写 Chromium 路径，或设置环境变量 `SIMPRINT_CHROMIUM_ROOT`。
-3. **应用补丁与资源**（在仓库根目录执行，需 Python 3）：
-   - **一键**：`python -m driver apply-and-prepare`（先 apply 再 deploy）。
-   - 分步：`python -m driver apply`，再 `python -m driver deploy`。
-   - 仅处理某单元：`python -m driver apply --project branding`、`python -m driver deploy --project branding`。
-   - 构建阶段（预留）：`python -m driver build`。
-4. 在 Chromium 目录中执行 gn gen、autoninja 等构建。
+本仓库推荐使用 **uv** 管理 Python 依赖（含 Jinja2，用于 `.patch.j2` 模板渲染）。以下为基于 uv 的详细步骤。
 
-详见 `docs/PROJECT_STRUCTURE.md`、各单元 README。
+### 环境准备
+
+1. **安装 uv**（若尚未安装）：
+   ```bash
+   # Windows (PowerShell)
+   irm https://astral.sh/uv/install.ps1 | iex
+   # 或 macOS/Linux
+   curl -LsSf https://astral.sh/uv/install.sh | sh
+   ```
+
+2. **克隆本仓库**：
+   ```bash
+   git clone <本仓库地址> simprint-browser-kernel
+   cd simprint-browser-kernel
+   ```
+
+3. **安装依赖**（在仓库根目录执行）：
+   ```bash
+   uv sync
+   ```
+   会创建虚拟环境并安装 `pyproject.toml` 中的依赖（如 jinja2），并生成/更新 `uv.lock`。
+
+### 配置
+
+4. **指定 Chromium 源码路径**（二选一）：
+   - **推荐**：复制 `driver/driver.config.example` 为 `driver/driver.config`，编辑并填写：
+     ```ini
+     SIMPRINT_CHROMIUM_ROOT=../simprint-browser/src
+     ```
+     路径为 gclient 拉取后的 `src` 目录（含 `chrome/VERSION`、`out/` 等）。
+   - 或设置环境变量：`SIMPRINT_CHROMIUM_ROOT=<Chromium src 绝对或相对路径>`。
+
+5. **Branding 可选配置**：若需修改产品名、可执行文件名、图标等，复制 `overlay/branding/branding.config.example` 为 `overlay/branding/branding.config` 并按需编辑。未配置时使用示例中的默认值。
+
+### 应用补丁与部署资源
+
+以下命令均在 **simprint-browser-kernel 仓库根目录** 执行，使用 `uv run` 以自动使用当前项目的虚拟环境。
+
+6. **一键应用补丁并部署资源**（推荐）：
+   ```bash
+   uv run python -m driver apply-and-prepare
+   ```
+   会先对 Chromium 源码执行 apply（打补丁，含 `.patch.j2` 渲染），再执行 deploy（部署图标、字符串、同步 args.gn 等）。
+
+7. **分步执行**：
+   ```bash
+   uv run python -m driver apply    # 仅应用补丁
+   uv run python -m driver deploy   # 仅部署资源（需先 apply）
+   ```
+
+8. **仅处理 branding 单元**：
+   ```bash
+   uv run python -m driver apply --project branding
+   uv run python -m driver deploy --project branding
+   # 或一次性
+   uv run python -m driver apply-and-prepare --project branding
+   ```
+
+9. **构建阶段**（预留，当前无实际操作）：
+   ```bash
+   uv run python -m driver build
+   ```
+
+### 构建 Chromium
+
+10. 在 **Chromium 源码目录**（即 `SIMPRINT_CHROMIUM_ROOT` 所指的 `src`）中执行常规构建，例如：
+    ```bash
+    gn gen out/Default
+    autoninja -C out/Default chrome
+    ```
+    或使用你已有的 `args.gn` 与输出目录。deploy 阶段会将 branding 相关选项同步到 `args.gn`（若指定了 `SIMPRINT_OUT_DIR`，则对应该 out 目录）。
+
+---
+
+更多约定见 `docs/PROJECT_STRUCTURE.md`，各单元说明见 `integration/`、`overlay/branding/`、`projects/*/` 下的 README。

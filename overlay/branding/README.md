@@ -8,7 +8,7 @@
 
 - `chrome_executable_name`：可执行文件名（对应补丁 001），如 `"simprint"` → simprint.exe
 - `is_simprint_branded`：是否启用 Simprint 图标与 BRANDING（对应补丁 002、003），`true` / `false`
-- `branding_path_component`：模板用，主题路径与图标名（如 `simprint` → theme/simprint/win、simprint.ico）
+- `branding_path_component`：apply 模板与 **deploy** 共用；用于 theme/{品牌}/、*_strings.grd、vector_icons/{品牌}/、win 图标名（如 `simprint` → simprint.ico）。**deploy 不再硬编码品牌名，均从此配置读取。**
 - `product_display_name`：模板用，产品显示名（BRANDING 等，如 `Simprint`）
 
 deploy 阶段会将本配置同步到 Chromium 的 `args.gn`（路径由 SIMPRINT_OUT_DIR 指定，默认 `out/Default`）。
@@ -17,18 +17,20 @@ deploy 阶段会将本配置同步到 Chromium 的 `args.gn`（路径由 SIMPRIN
 
 | 文件 | 说明 |
 |------|------|
-| 001-executable-name.patch | 自定义可执行文件名：gn 参数 `chrome_executable_name` |
+| 001-executable-name.patch.j2 | **Jinja2 模板**：可执行文件名，apply 时用 branding.config 的 `{{ chrome_executable_name }}` 写入 chrome_build.gni，无需依赖 args.gn |
 | 002-simprint-icon.patch.j2 | **Jinja2 模板**：图标与 branding，apply 时用 branding.config 渲染（`{{ branding_path_component }}`、`{{ product_display_name }}`） |
 | 003-install-static-simprint.patch | install_static 支持 Simprint，避免链接缺失符号 |
+| 004-installer-string-rc-simprint.patch | installer 字符串资源支持 simprint 品牌 |
+| 005-mini-installer-archive-exe.patch | mini_installer_archive 使用 `chrome_executable_name`（simprint.exe/dll），避免 gn 报 “input not generated” |
 
 顺序见 `apply_order.txt`。`.patch.j2` 在 apply 时先读 config 再渲染，再应用；需 `uv sync` 安装 jinja2。
 
 ## 资源
 
-- 应用 002 后，目录 `chrome/app/theme/simprint/` 与 `simprint/win/` 由补丁自动创建。
-- 图标（.ico）：deploy 阶段优先从 `overlay/branding/icons/` 复制到 `theme/simprint/win/`，缺失时从 Chromium `theme/chromium/win/` 复制并重命名；发布前可替换为自己的图标。
-- 磁贴图（tiles）：deploy 会从 `overlay/branding/icons/tiles/`（如 `Logo.png`、`SmallLogo.png`）复制到 `theme/simprint/win/tiles/`，缺失时从 Chromium 的 `chromium/win/tiles/` 复制。
-- 字符串与矢量图标：deploy 会复制/生成 `components_simprint_strings.grd`、`vector_icons/simprint/`、`chrome/app/simprint_strings.grd` 及 `simprint_strings_*.xtb`，无需手改。
+- 应用 002 后，目录 `chrome/app/theme/{branding_path_component}/` 与 `{branding_path_component}/win/` 由补丁自动创建。
+- 图标（.ico）：deploy 从配置读取品牌名，优先从 `overlay/branding/icons/` 复制到 `theme/{品牌}/win/`（如 simprint.ico），缺失时从 Chromium `theme/chromium/win/` 复制并重命名。
+- 磁贴图（tiles）：deploy 从 `overlay/branding/icons/tiles/` 复制到 `theme/{品牌}/win/tiles/`，缺失时从 Chromium 复制。
+- 字符串与矢量图标：deploy 会复制/生成 `components_{品牌}_strings.grd`、`vector_icons/{品牌}/`、`chrome/app/{品牌}_strings.grd` 及 `{品牌}_strings_*.xtb`，品牌名来自 `branding_path_component`。
 
 **推荐流程**：执行一次 `apply_deploy`（或先 `apply` 再 `deploy`）后，Chromium 树即可直接 `autoninja -C out\Release chrome`，无需额外手动步骤。
 
@@ -37,6 +39,6 @@ deploy 阶段会将本配置同步到 Chromium 的 `args.gn`（路径由 SIMPRIN
 由 driver 调用：`python overlay/branding/run.py apply|deploy|apply_deploy|build`。
 
 - **apply**：打补丁（含 .patch.j2 渲染）。
-- **deploy**：执行 `scripts/deploy_resources.py`（复制图标、tiles、strings、vector_icons）与 `scripts/sync_gn_args.py`（将 branding.config 同步到 args.gn）。**需先 apply**，否则 theme/simprint/BRANDING 不存在会报错。
+- **deploy**：执行 `scripts/deploy_resources.py`（从 branding.config 读 `branding_path_component`，复制图标、tiles、strings、vector_icons 等）与 `scripts/sync_gn_args.py`（将 config 同步到 args.gn）。**需先 apply**，否则 theme/{品牌}/BRANDING 不存在会报错。
 - **apply_deploy**：先 apply 再 deploy，一次完成，完成后即可构建。
 - **build**：当前无操作。
