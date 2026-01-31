@@ -33,6 +33,7 @@ deploy 阶段会将本配置同步到 Chromium 的 `args.gn`（路径由 SIMPRIN
 - 图标（.ico）：deploy 从配置读取品牌名，优先从 `overlay/branding/icons/` 复制到 `theme/{品牌}/win/`（如 simprint.ico），缺失时从 Chromium `theme/chromium/win/` 复制并重命名。
 - 磁贴图（tiles）：deploy 从 `overlay/branding/icons/tiles/` 复制到 `theme/{品牌}/win/tiles/`，缺失时从 Chromium 复制。
 - 字符串与矢量图标：deploy 会复制/生成 `components_{品牌}_strings.grd`、`vector_icons/{品牌}/`、`chrome/app/{品牌}_strings.grd` 及 `{品牌}_strings_*.xtb`，品牌名来自 `branding_path_component`。
+- **overlay/branding/strings/**：存放通用名 `strings.grd` 与 `strings_*.xtb`，内容使用占位符 `__PRODUCT_DISPLAY_NAME__`；deploy 时拷贝为 `{branding_path_component}_strings.*` 并替换占位符为 `product_display_name`，便于换品牌（如改为 prase）时只改配置。
 
 **推荐流程**：执行一次 `apply_deploy`（或先 `apply` 再 `deploy`）后，Chromium 树即可直接 `autoninja -C out\Release chrome`，无需额外手动步骤。
 

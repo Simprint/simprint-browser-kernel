@@ -12,5 +12,5 @@ is_simprint_branded = true
 
 # 品牌路径组件：apply/deploy 共用。用于 theme/{branding_path_component}/、*_strings.grd、vector_icons/{branding_path_component}/、win 图标名（{branding_path_component}.ico 等）
 branding_path_component = "simprint"
-# 产品显示名（BRANDING、补丁模板等）
+# 产品显示名（BRANDING、补丁模板、strings 占位符 __PRODUCT_DISPLAY_NAME__ 等）
 product_display_name = "Simprint"

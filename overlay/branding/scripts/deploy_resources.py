@@ -13,6 +13,11 @@ import config_loader
 
 load_config_from_project_root = config_loader.load_config_from_project_root
 
+try:
+    import template_util
+except ImportError:
+    template_util = None
+
 # chrome_unscaled_resources.grd / theme_resources.grd 中 ${branding_path_component}/ 下的 product logo（与品牌名无关）
 THEME_PRODUCT_LOGO_FILES = [
     "product_logo_64.png",
@@ -196,6 +201,34 @@ def _deploy_vector_icons(ctx: DeployContext) -> None:
             print("  Warning: missing vector_icons/chromium/%s (skipped)" % name)
 
 
+def _deploy_strings_from_templates(ctx: DeployContext, config: dict) -> None:
+    """从 overlay/branding/strings 的 .j2 模板渲染并写入 chrome/app/{component}_strings.*。"""
+    if template_util is None:
+        return
+    strings_dir = ctx.project_root / "strings"
+    grd_j2 = strings_dir / "strings.grd.j2"
+    if not grd_j2.is_file():
+        return
+    app = ctx.chromium_src / "chrome" / "app"
+    resources_dir = app / "resources"
+    resources_dir.mkdir(parents=True, exist_ok=True)
+    content = grd_j2.read_text(encoding="utf-8")
+    rendered = template_util.render_template_for_strings(content, config)
+    dst_grd = app / ("%s_strings.grd" % ctx.component)
+    dst_grd.write_text(rendered, encoding="utf-8")
+    count = 0
+    resources_j2 = strings_dir / "resources"
+    for f in sorted(resources_j2.glob("strings_*.xtb.j2")):
+        # strings_zh-CN.xtb.j2 -> stem "strings_zh-CN.xtb" -> suffix "zh-CN"
+        suffix = f.stem.replace("strings_", "", 1).replace(".xtb", "", 1)
+        content = f.read_text(encoding="utf-8")
+        rendered = template_util.render_template_for_strings(content, config)
+        dst = resources_dir / ("%s_strings_%s.xtb" % (ctx.component, suffix))
+        dst.write_text(rendered, encoding="utf-8")
+        count += 1
+    print("  %s_strings.grd + %d %s_strings_*.xtb (from overlay/branding/strings templates)" % (ctx.component, count, ctx.component))
+
+
 def _deploy_chrome_app_strings(ctx: DeployContext) -> None:
     app = ctx.chromium_src / "chrome" / "app"
     resources = app / "resources"
@@ -258,5 +291,9 @@ def run(chromium_src, kernel_root, project_root):
     print("Deploying vector_icons/%s..." % component)
     _deploy_vector_icons(ctx)
     print("Deploying chrome/app %s_strings + .xtb..." % component)
-    _deploy_chrome_app_strings(ctx)
+    strings_j2 = project_root / "strings" / "strings.grd.j2"
+    if strings_j2.is_file() and template_util is not None:
+        _deploy_strings_from_templates(ctx, config)
+    else:
+        _deploy_chrome_app_strings(ctx)
     print("Done. Branding resources deployed; ready to build.")
