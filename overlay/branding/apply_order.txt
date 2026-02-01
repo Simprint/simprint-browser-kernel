@@ -7,3 +7,4 @@
 005-mini-installer-archive-exe.patch
 006a-reorder-imports-exe-name-sig.patch
 006b-reorder-imports-exe-name-body.patch
+007-resource-allowlist-pdb.patch
