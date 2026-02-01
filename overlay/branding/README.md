@@ -90,7 +90,7 @@ uv run python overlay/branding/run.py apply
 
 - 应用 002 后，目录 `chrome/app/theme/{branding_path_component}/` 与 `{branding_path_component}/win/` 由补丁自动创建。
 - 图标（.ico）：deploy 从配置读取品牌名，优先从 `overlay/branding/icons/` 复制到 `theme/{品牌}/win/`（如 simprint.ico），缺失时从 Chromium `theme/chromium/win/` 复制并重命名。
-- 磁贴图（tiles）：deploy 从 `overlay/branding/icons/tiles/` 复制到 `theme/{品牌}/win/tiles/`，缺失时从 Chromium 复制。
+- **磁贴图（tiles）与 VisualElements**：deploy 从 `overlay/branding/icons/tiles/` 复制 Logo.png、SmallLogo.png 等到 `theme/{品牌}/win/tiles/`，缺失时从 Chromium 复制。构建时 `chrome/BUILD.gn` 的 `visual_elements_resources` 从 `theme/$branding_path_component/win/tiles/` 取图并输出到构建目录，最终进入安装包/ZIP 的 **VersionDir/VisualElements/**（开始菜单磁贴）。若构建用的是 `out/Release`，需保证 args.gn 中有 `is_simprint_branded = true`，否则会使用 `theme/chromium/win/tiles/`（Chrome 图）。sync_gn_args 会同时写入 `out/Default` 与 `out/Release`，避免用错构建目录导致 VisualElements 仍是 Chrome 图。
 - 字符串与矢量图标：deploy 会复制/生成 `components_{品牌}_strings.grd`、`vector_icons/{品牌}/`、`chrome/app/{品牌}_strings.grd` 及 `{品牌}_strings_*.xtb`，品牌名来自 `branding_path_component`。
 - **overlay/branding/strings/**：存放通用名 `strings.grd` 与 `strings_*.xtb`，内容使用占位符 `__PRODUCT_DISPLAY_NAME__`；deploy 时拷贝为 `{branding_path_component}_strings.*` 并替换占位符为 `product_display_name`，便于换品牌（如改为 prase）时只改配置。
 
