@@ -43,14 +43,5 @@ diff --git a/chrome/BUILD.gn b/chrome/BUILD.gn
 -    _chrome_output_name = "chrome"
 +    _chrome_output_name = chrome_executable_name
    }
- 
+
    executable("chrome_initial") {
-@@ -410,7 +410,7 @@ if (is_win) {
-       "app/startup_timestamps.h",
-     ]
- 
--    output_name = "chrome"
-+    output_name = chrome_executable_name
- 
-     deps = [
-       ":chrome_dll_manifest",

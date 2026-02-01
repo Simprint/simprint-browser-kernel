@@ -115,3 +115,9 @@ Chromium 源码与构建产物**不放在本目录**，需单独通过 gclient �
 ---
 
 更多约定见 `docs/PROJECT_STRUCTURE.md`，各单元说明见 `integration/`、`overlay/branding/`、`projects/*/` 下的 README。
+
+```
+gn gen out\Release --args="is_simprint_branded=true is_debug=false is_official_build=true chrome_pgo_phase=0"
+
+autoninja -C out\Release chrome  
+```

@@ -24,9 +24,67 @@ deploy 阶段会将本配置同步到 Chromium 的 `args.gn`（路径由 SIMPRIN
 | 005-mini-installer-archive-exe.patch | mini_installer_archive 使用 `chrome_executable_name`（simprint.exe/dll），避免 gn 报 “input not generated” |
 | 006a-reorder-imports-exe-name-sig.patch | reorder_imports 函数签名增加 exe_name 参数 |
 | 006b-reorder-imports-exe-name-body.patch | reorder_imports 脚本与 BUILD.gn 使用 exe_name，避免生成 chrome.exe.pdb 而期望 simprint.exe.pdb |
-| 007-resource-allowlist-pdb.patch | resource_allowlist 使用 `${chrome_executable_name}.dll.pdb`，使 is_official_build 下 enable_resource_allowlist_generation 在 Simprint 构建中正确依赖 PDB |
+| 007-resource-allowlist-pdb.patch | resource_allowlist 保持使用 `chrome.dll.pdb`（与上游一致；若上游已是该内容则补丁为 no-op），便于 is_official_build 下 enable_resource_allowlist_generation 正确依赖 PDB |
 
 顺序见 `apply_order.txt`。`.patch.j2` 在 apply 时先读 config 再渲染，再应用；需 `uv sync` 安装 jinja2。
+
+## 补丁调试与修复步骤
+
+当某补丁 apply 失败（如 `Hunk #N FAILED`、`Reversed (or previously applied) patch`）时，按以下流程排查并修改补丁，避免在“已打过前面补丁”的树上改补丁导致行号/上下文错位。
+
+### 1. 彻底撤销 Chromium 源码
+
+在 Chromium 源码根目录（如 `simprint-browser/src`）执行：
+
+```bash
+git reset --hard HEAD
+git clean -fd
+```
+
+说明：`git restore .` 只恢复已跟踪文件，不会删掉 `.rej`、`chrome/app/theme/simprint/` 等未跟踪内容；`reset --hard` + `git clean -fd` 才能回到干净状态。
+
+### 2. 只打到“目标补丁”之前
+
+编辑 `overlay/branding/apply_order.txt`，**只保留目标补丁之前的项**（例如要修 005 就只保留 001–004，要修 007 就只保留 001–006b）。保存后执行：
+
+```bash
+# 在 kernel 根目录，设置好 SIMPRINT_CHROMIUM_ROOT、SIMPRINT_KERNEL_ROOT 后：
+uv run python overlay/branding/run.py apply
+```
+
+确保 apply 全部成功。
+
+### 3. 按“当前文件”修改目标补丁
+
+打开目标补丁要改的**真实文件**（例如 005 对应 `chrome/installer/mini_installer/BUILD.gn`，007 对应 `chrome/BUILD.gn`），对照当前内容：
+
+- **行号**：补丁里的 `@@ -old_start,old_count +new_start,new_count @@` 必须与当前文件一致；若前面补丁插/删了行，后续补丁的“新文件”行号会整体偏移。
+- **上下文**：context 行（以空格开头的行）必须与当前文件**逐字一致**（缩进、空格、换行），否则 patch 找不到匹配。
+- **范围**：第二个 hunk 尽量包含足够多的上下文（如整段 `inputs = [ ... ]` 含 `]`），避免歧义匹配。
+
+修改补丁文件后保存。
+
+### 4. 再次彻底撤销并全量测试
+
+在 Chromium 源码根目录再次执行：
+
+```bash
+git reset --hard HEAD
+git clean -fd
+```
+
+把 `apply_order.txt` 改回**全部补丁**（001–007），再执行一次：
+
+```bash
+uv run python overlay/branding/run.py apply
+```
+
+全部成功即修复完成。
+
+### 参考：005 与 007 的修复要点
+
+- **005**：`chrome/installer/mini_installer/BUILD.gn` 在仅打 001–004 时，import 段从第 5 行起、`action("mini_installer_archive")` 的 `inputs` 从第 143 行起；补丁需按该行号与 2 空格缩进书写，且第二处 hunk 需包含完整 `inputs = [ ... ]` 段（含 `release_file,` 与 `]`）。
+- **007**：当前上游 `chrome/BUILD.gn` 的 resource_allowlist 已是 `chrome.dll.pdb`，001–006b 未改该行；若补丁写的是“把 `${chrome_executable_name}.dll.pdb` 改成 `chrome.dll.pdb`”，会报 Reversed/previously applied。处理方式：要么将 007 改为与当前文件一致的 no-op（旧新内容均为 `chrome.dll.pdb`），要么在不需要时从 `apply_order.txt` 中移除 007。
 
 ## 资源
 

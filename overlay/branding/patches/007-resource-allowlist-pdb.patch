@@ -5,7 +5,7 @@ diff --git a/chrome/BUILD.gn b/chrome/BUILD.gn
    generate_resource_allowlist("resource_allowlist") {
      deps = [ ":chrome_dll" ]
 -    inputs = [ "$root_out_dir/chrome.dll.pdb" ]
-+    inputs = [ "$root_out_dir/${chrome_executable_name}.dll.pdb" ]
++    inputs = [ "$root_out_dir/chrome.dll.pdb" ]
      output = _chrome_resource_allowlist
    }
  }
