@@ -80,7 +80,10 @@ def apply_() -> None:
         return
     order = _read_order(order_path)
     if not order:
-        order = sorted(p.name for p in list(patches_dir.glob("*.patch")) + list(patches_dir.glob("*.patch.j2")))
+        order = sorted(
+            p.name
+            for p in list(patches_dir.glob("*.patch")) + list(patches_dir.glob("*.patch.j2")) + list(patches_dir.glob("*.py"))
+        )
     config = _load_branding_config()
     template_util = _load_template_util()
 
@@ -89,6 +92,15 @@ def apply_() -> None:
         if not patch_file.is_file():
             continue
         print(f"Applying: overlay/branding/{name}")
+        if name.endswith(".py"):
+            r = subprocess.run(
+                [sys.executable, str(patch_file)],
+                cwd=str(PROJECT_ROOT),
+                env={**os.environ, "SIMPRINT_CHROMIUM_ROOT": str(chromium_src)},
+            )
+            if r.returncode != 0:
+                raise SystemExit(f"script failed: {patch_file} (exit {r.returncode})")
+            continue
         if name.endswith(".patch.j2"):
             if template_util is None:
                 raise SystemExit("Template .patch.j2 requires jinja2 (uv sync).")

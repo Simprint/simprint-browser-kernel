@@ -25,6 +25,7 @@ deploy 阶段会将本配置同步到 Chromium 的 `args.gn`（路径由 SIMPRIN
 | 006a-reorder-imports-exe-name-sig.patch | reorder_imports 函数签名增加 exe_name 参数 |
 | 006b-reorder-imports-exe-name-body.patch | reorder_imports 脚本与 BUILD.gn 使用 exe_name，避免生成 chrome.exe.pdb 而期望 simprint.exe.pdb |
 | 007-resource-allowlist-pdb.patch | resource_allowlist 保持使用 `chrome.dll.pdb`（与上游一致；若上游已是该内容则补丁为 no-op），便于 is_official_build 下 enable_resource_allowlist_generation 正确依赖 PDB |
+| 008-variations-dedupe-by-name.py | **可执行脚本**：variations 的 generate_ui_string_overrider 按 (hash, name) 去重；若目标文件已含该逻辑则跳过，避免上游已有修复时重复插入。apply 阶段执行该 .py。 |
 
 顺序见 `apply_order.txt`。`.patch.j2` 在 apply 时先读 config 再渲染，再应用；需 `uv sync` 安装 jinja2。
 

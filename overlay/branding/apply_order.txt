@@ -8,3 +8,4 @@
 006a-reorder-imports-exe-name-sig.patch
 006b-reorder-imports-exe-name-body.patch
 007-resource-allowlist-pdb.patch
+008-variations-dedupe-by-name.py
