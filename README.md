@@ -8,25 +8,25 @@
 simprint-browser-kernel/
 ├── driver/                        # 流水线驱动：按 order.txt 调用各单元
 │   ├── driver.config, order.txt, config.py, runner.py, cli.py, __main__.py
-├── integration/                   # 接入层：最少 patch + 构建胶水
+├── integration/                   # 接入层：最少 patch，建立可接入入口（链库、hook 等）
 │   ├── patches/, apply_order.txt, run.py, README.md
 ├── overlay/                       # 对 Chromium 源码的修改（无需接入层）
 │   └── branding/                  # 产品名、图标、主题
 │       ├── patches/, scripts/, branding.config, run.py, README.md
-├── projects/                      # 依赖接入层的高阶定制功能（仅 fingerprint、shared；无 branding）
+├── projects/                      # 业务代码，通过接入层入口接入 Chromium
 │   ├── fingerprint/               # 指纹等（预留）
-│   │   ├── apply_order.txt, patches/, README.md, run.py
+│   │   ├── 代码、BUILD、run.py 等
 │   └── shared/                    # 公共库区（预留）
-│       ├── apply_order.txt, patches/, README.md, run.py
+│       ├── 代码、BUILD、run.py 等
 ├── docs/
 │   └── PROJECT_STRUCTURE.md
 └── README.md
 ```
 
 - **driver/**：流水线驱动，按 driver/order.txt 依次调用 integration、overlay、projects 下各单元的 run.py。
-- **integration/**：与 Chromium 的接入（最少 patch、BUILD 链库等），当前无 patch。
-- **overlay/**：对源码的修改（产品名、图标、主题等），不依赖接入层。
-- **projects/**：高阶定制功能（指纹、鉴权、同步等），依赖接入层。
+- **integration/**：**接入层**。通过最少 patch 在 Chromium 中建立**可接入的入口**，不承载业务逻辑；目的是让 projects 中的代码能够挂进来，而非用 patch 直接改 Chromium 业务。
+- **overlay/**：对源码的修改（产品名、图标、主题等），不依赖接入层，主要通过 patch 完成。
+- **projects/**：**业务代码**。通过 integration 提供的接入点**接入** Chromium，从而修改或扩展功能。接入方式多样，如静态库、hook 某个对象、替换实现等；复杂功能在此用代码实现，而非通过 patch 改 Chromium 源码。
 
 详细约定见 **`docs/PROJECT_STRUCTURE.md`**。
 
