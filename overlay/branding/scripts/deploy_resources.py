@@ -376,6 +376,18 @@ def _deploy_chrome_app_strings(ctx: DeployContext) -> None:
         print("  %s_strings.grd + %d %s_strings_*.xtb (from chromium)" % (ctx.component, count, ctx.component))
 
 
+def _deploy_install_static(ctx: DeployContext) -> None:
+    """复制 simprint_install_modes.cc 到 chrome/install_static/。"""
+    src = ctx.project_root / "install_static" / "simprint_install_modes.cc"
+    if not src.is_file():
+        print("  Warning: install_static/simprint_install_modes.cc not found, skipped")
+        return
+    dst_dir = ctx.chromium_src / "chrome" / "install_static"
+    dst = dst_dir / "simprint_install_modes.cc"
+    shutil.copy2(src, dst)
+    print("  simprint_install_modes.cc copied to chrome/install_static/")
+
+
 def run(chromium_src, kernel_root, project_root):
     config = load_config_from_project_root(project_root)
     component = config.get("branding_path_component", "simprint")
@@ -436,4 +448,6 @@ def run(chromium_src, kernel_root, project_root):
         _deploy_strings_from_templates(ctx, config)
     else:
         _deploy_chrome_app_strings(ctx)
+    print("Deploying chrome/install_static/simprint_install_modes.cc...")
+    _deploy_install_static(ctx)
     print("Done. Branding resources deployed; ready to build.")

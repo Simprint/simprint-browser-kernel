@@ -8,7 +8,7 @@ index 743c549879526..197dcb72b65f7 100644
        ]
 +    } else if (is_simprint_branded) {
 +      sources += [
-+        "chromium_install_modes.cc",
++        "simprint_install_modes.cc",
 +        "chromium_install_modes.h",
 +      ]
      } else {
