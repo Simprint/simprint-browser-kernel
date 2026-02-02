@@ -9,3 +9,4 @@
 006b-reorder-imports-exe-name-body.patch
 007-resource-allowlist-pdb.patch
 008-variations-dedupe-by-name.py
+009-disable-startup-infobars.patch
