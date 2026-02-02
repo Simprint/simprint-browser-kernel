@@ -258,14 +258,52 @@ def _deploy_tiles(ctx: DeployContext) -> None:
             print("  Warning: missing tiles/%s (skipped)" % name)
 
 
-def _deploy_components_strings(ctx: DeployContext) -> None:
+def _deploy_components_strings_from_templates(ctx: DeployContext, config: dict) -> None:
+    """从 overlay/branding/strings 的 components_strings 模板渲染并写入 components/components_{component}_strings.*。"""
+    if template_util is None:
+        return
+    strings_dir = ctx.project_root / "strings"
+    grd_j2 = strings_dir / "components_strings.grd.j2"
+    if not grd_j2.is_file():
+        # 如果模板不存在，回退到直接复制
+        _deploy_components_strings_fallback(ctx)
+        return
+    
+    comp = ctx.chromium_src / "components"
+    strings_dir_chromium = comp / "strings"
+    strings_dir_chromium.mkdir(parents=True, exist_ok=True)
+    
+    # 渲染 GRD 模板
+    content = grd_j2.read_text(encoding="utf-8")
+    rendered = template_util.render_template_for_strings(content, config)
+    dst_grd = comp / ("components_%s_strings.grd" % ctx.component)
+    dst_grd.write_text(rendered, encoding="utf-8")
+    
+    # 渲染 XTB 模板
+    count = 0
+    comp_res_j2 = ctx.project_root / "strings" / "components_resources"
+    if comp_res_j2.is_dir():
+        for f in sorted(comp_res_j2.glob("components_strings_*.xtb.j2")):
+            # components_strings_zh-CN.xtb.j2 -> components_simprint_strings_zh-CN.xtb
+            suffix = f.stem.replace("components_strings_", "").replace(".xtb", "")
+            content = f.read_text(encoding="utf-8")
+            rendered = template_util.render_template_for_strings(content, config)
+            dst = strings_dir_chromium / ("components_%s_strings_%s.xtb" % (ctx.component, suffix))
+            dst.write_text(rendered, encoding="utf-8")
+            count += 1
+    
+    print("  components_%s_strings.grd + %d components_%s_strings_*.xtb (from templates)" % (ctx.component, count, ctx.component))
+
+
+def _deploy_components_strings_fallback(ctx: DeployContext) -> None:
+    """回退方案：直接复制 components_chromium_strings.grd（不进行替换）。"""
     comp = ctx.chromium_src / "components"
     src_grd = comp / "components_chromium_strings.grd"
     dst_grd = comp / ("components_%s_strings.grd" % ctx.component)
     if not src_grd.is_file():
         return
     shutil.copy2(src_grd, dst_grd)
-    print("  components_%s_strings.grd (from chromium)" % ctx.component)
+    print("  components_%s_strings.grd (from chromium, no template)" % ctx.component)
 
 
 def _deploy_resource_ids_spec(ctx: DeployContext) -> None:
@@ -434,8 +472,8 @@ def run(chromium_src, kernel_root, project_root):
     if ntp_favicon_file:
         print("Deploying NTP favicon (new tab bar icon)...")
         _deploy_ntp_favicon(ctx, ntp_favicon_file, ntp_favicon_100)
-    print("Deploying components_%s_strings.grd..." % component)
-    _deploy_components_strings(ctx)
+    print("Deploying components_%s_strings.grd + .xtb..." % component)
+    _deploy_components_strings_from_templates(ctx, config)
     print("Deploying resource_ids.spec (grit first id)...")
     _deploy_resource_ids_spec(ctx)
     print("Deploying create_installer_string_rc.py (IDS_PRODUCT_NAME %s)..." % component)
