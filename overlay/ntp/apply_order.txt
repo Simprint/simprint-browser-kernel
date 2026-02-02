@@ -1,0 +1,15 @@
+# Simprint NTP Overlay - Patch Application Order
+# 由 git diff simprint/branding simprint/ntp 生成
+
+001-browser-build-gn.patch
+002-interface-binders.patch
+003-resources-build-gn.patch
+004-app-css.patch
+005-new-tab-page-gni.patch
+006-new-tab-page-html.patch
+007-new-tab-page-ts.patch
+008-customize-buttons-css.patch
+009-ui-build-gn.patch
+010-webui-ntp-build-gn.patch
+011-new-tab-page-ui-cc.patch
+012-new-tab-page-ui-h.patch

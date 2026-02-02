@@ -1,0 +1,65 @@
+diff --git a/chrome/browser/resources/new_tab_page/new_tab_page.html b/chrome/browser/resources/new_tab_page/new_tab_page.html
+index 6e261416165ac..b8768324f3e55 100644
+--- a/chrome/browser/resources/new_tab_page/new_tab_page.html
++++ b/chrome/browser/resources/new_tab_page/new_tab_page.html
+@@ -5,10 +5,35 @@
+     <title>$i18n{title}</title>
+     <style>
+       body {
+-        background: $i18n{backgroundColor};
++        background: #ffffff;
+         margin: 0;
+       }
+ 
++      /* Simprint 品牌背景 Canvas */
++      #simprintBgCanvas {
++        position: fixed;
++        top: 0;
++        left: 0;
++        width: 100%;
++        height: 100%;
++        pointer-events: none;
++        z-index: 0;
++      }
++
++      /* 光晕叠加层 */
++      #simprintGlow {
++        position: fixed;
++        top: 0;
++        left: 0;
++        width: 100%;
++        height: 100%;
++        pointer-events: none;
++        z-index: 1;
++        background: 
++          radial-gradient(ellipse 80% 50% at 20% 40%, rgba(99, 102, 241, 0.04) 0%, transparent 50%),
++          radial-gradient(ellipse 60% 40% at 80% 60%, rgba(139, 92, 246, 0.03) 0%, transparent 50%);
++      }
++
+       #backgroundImage {
+         border: none;
+         height: 100%;
+@@ -17,14 +42,23 @@
+         top: 0;
+         visibility: hidden;
+         width: 100%;
++        z-index: 2;
+       }
+ 
+       [show-background-image] #backgroundImage {
+         visibility: visible;
+       }
++
++      /* 确保 ntp-app 在背景之上 */
++      ntp-app {
++        position: relative;
++        z-index: 10;
++      }
+     </style>
+   </head>
+   <body>
++    <canvas id="simprintBgCanvas"></canvas>
++    <div id="simprintGlow"></div>
+     <iframe id="backgroundImage" src="$i18nRaw{backgroundImageUrl}"></iframe>
+     <ntp-app></ntp-app>
+     <script type="module" src="new_tab_page.js"></script>

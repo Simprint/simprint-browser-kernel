@@ -1,0 +1,42 @@
+diff --git a/chrome/browser/resources/new_tab_shared/customize_buttons/customize_buttons.css b/chrome/browser/resources/new_tab_shared/customize_buttons/customize_buttons.css
+index 35e37e91901f0..b48713e51d9fe 100644
+--- a/chrome/browser/resources/new_tab_shared/customize_buttons/customize_buttons.css
++++ b/chrome/browser/resources/new_tab_shared/customize_buttons/customize_buttons.css
+@@ -14,6 +14,14 @@
+   display: flex;
+   flex-wrap: wrap;
+   gap: 8px;
++  animation: delayShow 0s 5000ms forwards;
++  opacity: 0;
++}
++
++@keyframes delayShow {
++  to {
++    opacity: 1;
++  }
+ }
+ 
+ #wallpaperSearchButton {
+@@ -26,10 +34,10 @@
+ }
+ 
+ #customizeButton {
+-  --cr-hover-background-color:
+-      var(--color-new-tab-page-button-background-hovered);
++  --cr-hover-background-color: transparent;
+   --cr-button-text-color: var(--color-new-tab-page-button-foreground);
+-  --cr-button-background-color: var(--color-new-tab-page-button-background);
++  --cr-button-background-color: transparent;
++  order: -1;
+ }
+ 
+ :host([show-background-image]) #customizeButton,
+@@ -49,7 +57,7 @@
+   --cr-button-height: 32px;
+   border: none;
+   border-radius: calc(.5 * var(--cr-button-height));
+-  box-shadow: 0 3px 6px rgba(0, 0, 0, .16), 0 1px 2px rgba(0, 0, 0, .23);
++  box-shadow: none;
+   font-weight: 400;
+   min-width: 32px;
+   padding-inline-end: 16px;

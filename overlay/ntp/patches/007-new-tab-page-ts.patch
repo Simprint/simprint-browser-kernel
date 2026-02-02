@@ -1,0 +1,14 @@
+diff --git a/chrome/browser/resources/new_tab_page/new_tab_page.ts b/chrome/browser/resources/new_tab_page/new_tab_page.ts
+index 9ffc3218ac53c..bf3b91571156a 100644
+--- a/chrome/browser/resources/new_tab_page/new_tab_page.ts
++++ b/chrome/browser/resources/new_tab_page/new_tab_page.ts
+@@ -9,6 +9,9 @@
+  * things tests need.
+  */
+ 
++// Simprint 品牌背景动画
++import './simprint_ntp.js';
++
+ export {CustomizeButtonsElement} from 'chrome://new-tab-page/shared/customize_buttons/customize_buttons.js';
+ export {PlaceholderTextCycler, SearchboxElement} from 'chrome://resources/cr_components/searchbox/searchbox.js';
+ export {createAutocompleteMatch, SearchboxBrowserProxy} from 'chrome://resources/cr_components/searchbox/searchbox_browser_proxy.js';

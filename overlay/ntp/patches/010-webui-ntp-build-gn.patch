@@ -1,0 +1,12 @@
+diff --git a/chrome/browser/ui/webui/new_tab_page/BUILD.gn b/chrome/browser/ui/webui/new_tab_page/BUILD.gn
+index 83df3dfe6bcb0..593aba902d0aa 100644
+--- a/chrome/browser/ui/webui/new_tab_page/BUILD.gn
++++ b/chrome/browser/ui/webui/new_tab_page/BUILD.gn
+@@ -13,6 +13,7 @@ mojom("mojo_bindings") {
+   public_deps = [
+     "//chrome/browser/ui/webui/new_tab_page/action_chips:mojo_bindings",
+     "//chrome/browser/ui/webui/new_tab_page/ntp_promo:mojo_bindings",
++    "//chrome/browser/ui/webui/new_tab_page/simprint_ip:mojo_bindings",
+     "//chrome/browser/ui/webui/ntp_microsoft_auth:shared",
+     "//components/ntp_tiles:mojo_bindings",
+     "//components/omnibox/browser:mojo_bindings",

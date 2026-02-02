@@ -1,0 +1,23 @@
+diff --git a/chrome/browser/chrome_browser_interface_binders_webui_parts_desktop.cc b/chrome/browser/chrome_browser_interface_binders_webui_parts_desktop.cc
+index 315433ebda21b..cda2a6f3e5f98 100644
+--- a/chrome/browser/chrome_browser_interface_binders_webui_parts_desktop.cc
++++ b/chrome/browser/chrome_browser_interface_binders_webui_parts_desktop.cc
+@@ -175,6 +175,7 @@
+ #if !defined(OFFICIAL_BUILD)
+ #include "chrome/browser/ui/webui/new_tab_page/foo/foo.mojom.h"  // nogncheck crbug.com/1125897
+ #endif  // defined(OFFICIAL_BUILD)
++#include "chrome/browser/ui/webui/new_tab_page/simprint_ip/simprint_ip.mojom.h"
+ 
+ #if BUILDFLAG(ENABLE_DICE_SUPPORT)
+ #include "chrome/browser/ui/webui/signin/signout_confirmation/signout_confirmation_ui.h"
+@@ -383,6 +384,10 @@ void PopulateChromeWebUIFrameBindersPartsDesktop(
+       map);
+ #endif  // !defined(OFFICIAL_BUILD)
+ 
++  // Simprint IP detection handler
++  RegisterWebUIControllerInterfaceBinder<simprint_ip::mojom::SimprintIpHandler,
++                                         NewTabPageUI>(map);
++
+   if (IsDriveModuleEnabled()) {
+     RegisterWebUIControllerInterfaceBinder<
+         file_suggestion::mojom::DriveSuggestionHandler, NewTabPageUI>(map);

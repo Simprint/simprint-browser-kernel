@@ -1,0 +1,21 @@
+diff --git a/chrome/browser/resources/new_tab_page/app.css b/chrome/browser/resources/new_tab_page/app.css
+index 2bdc14aa5c696..fb315e010754b 100644
+--- a/chrome/browser/resources/new_tab_page/app.css
++++ b/chrome/browser/resources/new_tab_page/app.css
+@@ -276,12 +276,14 @@ ntp-middle-slot-promo:not([hidden]) ~ #modules {
+ }
+ 
+ #customizeButtons {
+-  bottom: 16px;
++  top: 18px;
++  right: 115px;
+   position: fixed;
++  z-index: 1000;
+ }
+ 
+ :host-context([dir='ltr']) #customizeButtons {
+-  right: 16px;
++  right: 115px;
+ }
+ 
+ :host-context([dir='rtl']) #customizeButtons {
