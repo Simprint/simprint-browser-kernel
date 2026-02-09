@@ -2,5 +2,6 @@
 # 以 # 开头或空行会被忽略
 integration
 branding
+ntp
 fingerprint
 shared
