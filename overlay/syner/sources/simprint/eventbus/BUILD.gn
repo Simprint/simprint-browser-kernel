@@ -1,0 +1,32 @@
+# Copyright 2024 Simprint. All rights reserved.
+# EventBus 模块构建配置
+
+import("//build/config/features.gni")
+
+source_set("eventbus") {
+  sources = [
+    "eventbus.cc",
+    "eventbus.h",
+    "handler.cc",
+    "handler.h",
+    "message.cc",
+    "message.h",
+    "topics.h",
+    "transport.h",
+  ]
+
+  if (is_win) {
+    sources += [ "transport_win.cc" ]
+  }
+
+  deps = [
+    "//base",
+    "//chrome/browser:browser_process",
+    "//simprint/console_log",
+  ]
+
+  # Windows Named Pipe 需要的库
+  if (is_win) {
+    libs = [ "kernel32.lib" ]
+  }
+}

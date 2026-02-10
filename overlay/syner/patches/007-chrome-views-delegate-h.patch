@@ -1,0 +1,20 @@
+diff --git a/chrome/browser/ui/views/chrome_views_delegate.h b/chrome/browser/ui/views/chrome_views_delegate.h
+index c695c48d0c267..c73dc28a9b403 100644
+--- a/chrome/browser/ui/views/chrome_views_delegate.h
++++ b/chrome/browser/ui/views/chrome_views_delegate.h
+@@ -63,6 +63,15 @@ class ChromeViewsDelegate : public views::ViewsDelegate {
+   void OnBeforeWidgetInit(
+       views::Widget::InitParams* params,
+       views::internal::NativeWidgetDelegate* delegate) override;
++  void OnWidgetInitialized(views::Widget* widget) override;
++
++  // Set by sync input code to attach handler to popup roots when any widget
++  // is initialized (e.g. menu, bubble). Called on UI thread.
++  using SyncInputOnWidgetInitializedCallback =
++      base::RepeatingCallback<void(views::Widget*)>;
++  static void SetSyncInputOnWidgetInitialized(
++      SyncInputOnWidgetInitializedCallback callback);
++
+ #if BUILDFLAG(IS_MAC)
+   ui::ContextFactory* GetContextFactory() override;
+ #endif

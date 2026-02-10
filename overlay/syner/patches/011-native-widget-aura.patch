@@ -1,0 +1,30 @@
+diff --git a/ui/views/widget/native_widget_aura.cc b/ui/views/widget/native_widget_aura.cc
+index 9b7f41442f233..d9de50e84489e 100644
+--- a/ui/views/widget/native_widget_aura.cc
++++ b/ui/views/widget/native_widget_aura.cc
+@@ -11,6 +11,7 @@
+ 
+ #include "base/feature_list.h"
+ #include "base/functional/bind.h"
++#include "base/logging.h"
+ #include "base/functional/callback_helpers.h"
+ #include "base/location.h"
+ #include "base/memory/raw_ptr.h"
+@@ -299,8 +300,17 @@ void NativeWidgetAura::InitNativeWidget(Widget::InitParams params) {
+ 
+     // Set up the transient child before the window is added. This way the
+     // LayoutManager knows the window has a transient parent.
++    if (params.type == Widget::InitParams::TYPE_MENU) {
++      LOG(ERROR) << "[Simprint][NativeWidgetAura] TYPE_MENU Init: parent="
++                 << static_cast<void*>(parent)
++                 << " parent_type="
++                 << (parent ? static_cast<int>(parent->GetType()) : -1);
++    }
+     if (parent && parent->GetType() != aura::client::WINDOW_TYPE_UNKNOWN) {
+       wm::AddTransientChild(parent, window_);
++      if (params.type == Widget::InitParams::TYPE_MENU) {
++        LOG(ERROR) << "[Simprint][NativeWidgetAura] AddTransientChild called for TYPE_MENU";
++      }
+       if (!context) {
+         context = parent;
+       }

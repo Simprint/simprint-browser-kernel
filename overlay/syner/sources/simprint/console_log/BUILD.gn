@@ -1,0 +1,16 @@
+# Copyright 2024 Simprint. All rights reserved.
+# 项目内通用：输出到 Chromium 日志 + 当前标签页 DevTools Console
+
+source_set("console_log") {
+  sources = [
+    "console_log.cc",
+    "console_log.h",
+  ]
+
+  deps = [
+    "//base",
+    "//chrome/browser:browser_process",
+    "//content/public/browser",
+    "//content/public/common",
+  ]
+}

@@ -1,0 +1,16 @@
+# Simprint Syner Overlay - Patch Application Order
+# 同步功能模块：EventBus IPC 通信 + 输入同步（键盘、鼠标、IME）
+# 由 git diff 45c01f3f68a83..105f9bc65d5dc 生成
+
+001-chrome-browser-build-gn.patch
+002-chrome-browser-main.patch
+003-chrome-ui-build-gn.patch
+004-browser-view-cc.patch
+005-browser-view-h.patch
+006-chrome-views-delegate-cc.patch
+007-chrome-views-delegate-h.patch
+008-render-widget-host-view-aura.patch
+009-textfield-cc.patch
+010-views-delegate-h.patch
+011-native-widget-aura.patch
+012-widget-cc.patch

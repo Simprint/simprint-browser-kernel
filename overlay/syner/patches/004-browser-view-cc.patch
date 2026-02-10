@@ -1,0 +1,458 @@
+diff --git a/chrome/browser/ui/views/frame/browser_view.cc b/chrome/browser/ui/views/frame/browser_view.cc
+index d0cac58da0356..f668b1236aaa5 100644
+--- a/chrome/browser/ui/views/frame/browser_view.cc
++++ b/chrome/browser/ui/views/frame/browser_view.cc
+@@ -11,6 +11,9 @@
+ #include <optional>
+ #include <set>
+ #include <utility>
++#include <vector>
++
++#include "chrome/browser/ui/views/chrome_views_delegate.h"
+ 
+ #include "base/auto_reset.h"
+ #include "base/byte_count.h"
+@@ -147,7 +150,11 @@
+ #include "chrome/browser/ui/views/frame/scrim_view.h"
+ #include "chrome/browser/ui/views/frame/shadow_overlay_view.h"
+ #include "chrome/browser/ui/views/frame/tab_modal_dialog_host.h"
++#include "chrome/browser/ui/views/frame/sync_input_replay.h"
+ #include "chrome/browser/ui/views/frame/tab_strip_region_view.h"
++#include "content/public/browser/browser_thread.h"
++#include "simprint/eventbus/eventbus.h"
++#include "simprint/eventbus/topics.h"
+ #include "chrome/browser/ui/views/frame/top_container_loading_bar.h"
+ #include "chrome/browser/ui/views/frame/top_container_view.h"
+ #include "chrome/browser/ui/views/frame/top_controls_slide_controller.h"
+@@ -356,9 +363,13 @@
+ 
+ #if defined(USE_AURA)
+ #include "chrome/browser/ui/views/theme_profile_key.h"
++#include "ui/aura/client/transient_window_client.h"
++#include "ui/events/event.h"
+ #include "ui/aura/client/window_parenting_client.h"
+ #include "ui/aura/window.h"
++#include "ui/aura/window_observer.h"
+ #include "ui/aura/window_tree_host.h"
++#include "ui/events/event_target.h"
+ #endif
+ 
+ #if BUILDFLAG(IS_WIN)
+@@ -841,6 +852,61 @@ class BrowserView::AccessibilityModeObserver : public ui::AXModeObserver {
+       ax_mode_observation_{this};
+ };
+ 
++#if defined(USE_AURA)
++class BrowserView::SyncInputPopupRootsObserver : public aura::WindowObserver {
++ public:
++  SyncInputPopupRootsObserver(
++      SyncInputCaptureHandler* handler,
++      std::vector<raw_ptr<aura::Window>>* roots_ptr,
++      std::vector<raw_ptr<views::View>>* root_views_ptr)
++      : handler_(handler),
++        roots_ptr_(roots_ptr),
++        root_views_ptr_(root_views_ptr) {}
++
++  ~SyncInputPopupRootsObserver() override {
++    for (aura::Window* root : observed_roots_) {
++      if (root) {
++        root->RemoveObserver(this);
++      }
++    }
++  }
++
++  void AddRoot(aura::Window* root) {
++    if (root && observed_roots_.insert(root).second) {
++      root->AddObserver(this);
++    }
++  }
++
++  void RemoveRoot(aura::Window* root) {
++    observed_roots_.erase(root);
++  }
++
++  // aura::WindowObserver:
++  void OnWindowDestroying(aura::Window* window) override {
++    observed_roots_.erase(window);
++    if (!handler_ || !roots_ptr_) {
++      return;
++    }
++    window->RemovePreTargetHandler(handler_);
++    auto it = std::ranges::find(*roots_ptr_, window);
++    if (it != roots_ptr_->end()) {
++      size_t idx = static_cast<size_t>(it - roots_ptr_->begin());
++      roots_ptr_->erase(it);
++      if (root_views_ptr_ && idx < root_views_ptr_->size()) {
++        root_views_ptr_->erase(root_views_ptr_->begin() +
++                              static_cast<ptrdiff_t>(idx));
++      }
++    }
++  }
++
++ private:
++  raw_ptr<SyncInputCaptureHandler> handler_;
++  raw_ptr<std::vector<raw_ptr<aura::Window>>> roots_ptr_;
++  raw_ptr<std::vector<raw_ptr<views::View>>> root_views_ptr_;
++  std::set<raw_ptr<aura::Window>> observed_roots_;
++};
++#endif  // USE_AURA
++
+ ///////////////////////////////////////////////////////////////////////////////
+ // BrowserView, public:
+ 
+@@ -1086,6 +1152,47 @@ BrowserView::~BrowserView() {
+   top_container_ = nullptr;
+   web_app_frame_toolbar_ = nullptr;
+   web_app_window_title_ = nullptr;
++  if (sync_input_capture_handler_) {
++#if defined(USE_AURA)
++    ChromeViewsDelegate::SetSyncInputOnWidgetInitialized(
++        ChromeViewsDelegate::SyncInputOnWidgetInitializedCallback());
++    sync_capture_popup_roots_observer_.reset();
++    aura::client::TransientWindowClient* transient_client =
++        aura::client::GetTransientWindowClient();
++    if (transient_client) {
++      transient_client->RemoveObserver(this);
++    }
++    for (aura::Window* trans_root : sync_capture_transient_roots_) {
++      if (trans_root) {
++        trans_root->RemovePreTargetHandler(sync_input_capture_handler_.get());
++      }
++    }
++    sync_capture_transient_roots_.clear();
++    sync_capture_transient_root_views_.clear();
++    if (sync_capture_web_contents_window_) {
++      sync_capture_web_contents_window_->RemovePreTargetHandler(
++          sync_input_capture_handler_.get());
++    }
++    sync_capture_web_contents_window_ = nullptr;
++#endif
++    if (native_window_for_sync_capture_) {
++      native_window_for_sync_capture_->RemovePreTargetHandler(
++          sync_input_capture_handler_.get());
++    }
++    if (sync_capture_content_window_ &&
++        sync_capture_content_window_ != native_window_for_sync_capture_) {
++      sync_capture_content_window_->RemovePreTargetHandler(
++          sync_input_capture_handler_.get());
++    }
++    if (!native_window_for_sync_capture_ && root_view_for_sync_capture_) {
++      root_view_for_sync_capture_->RemovePreTargetHandler(
++          sync_input_capture_handler_.get());
++    }
++  }
++  sync_input_capture_handler_.reset();
++  root_view_for_sync_capture_ = nullptr;
++  native_window_for_sync_capture_ = nullptr;
++  sync_capture_content_window_ = nullptr;
+   tab_strip_region_view_ = nullptr;
+ 
+   webui_tab_strip_ = nullptr;
+@@ -1946,6 +2053,8 @@ void BrowserView::OnActiveTabChanged(content::WebContents* old_contents,
+   if (AppUsesBorderlessMode() && !old_contents) {
+     SetWindowManagementPermissionSubscriptionForBorderlessMode(new_contents);
+   }
++
++  EnsureSyncCaptureOnActiveWebContents();
+ }
+ 
+ void BrowserView::OnTabDetached(content::WebContents* contents,
+@@ -3462,6 +3571,10 @@ void BrowserView::Paste() {
+ // won't do anything. We'll need something like an overall clipboard command
+ // manager to do that.
+ void BrowserView::CutCopyPaste(int command_id) {
++  // 菜单触发粘贴等会走此路径，补充 OnKeyEvent 未覆盖的场景
++  if (command_id == IDC_PASTE) {
++    SyncInputCaptureHandler::SendSyncPasteIfMain();
++  }
+ #if BUILDFLAG(IS_MAC)
+   auto command = CommandFromBrowserCommand(command_id);
+   auto* application_host =
+@@ -5242,6 +5355,102 @@ void BrowserView::AddedToWidget() {
+   immersive_mode_controller->Init(this);
+   immersive_mode_controller->AddObserver(this);
+ 
++  // 同步输入：主控时全窗口捕获鼠标事件；从控时重放由 EventBus 回调到视图层。
++  // 必须在 AddedToWidget 中执行，此时 GetWidget() 已有效；在构造函数中调用会崩溃。
++  // 按设计挂到「接收所有原生事件」的宿主根窗口，这样任意位置（tab/工具栏/内容区）的
++  // 鼠标事件都能收到；transient 弹出层（菜单、气泡等）通过 TransientWindowClientObserver 再挂同一 handler。
++  if (!sync_input_capture_handler_) {
++    views::View* root_view = GetWidget()->GetRootView();
++    sync_input_capture_handler_ =
++        std::make_unique<SyncInputCaptureHandler>(root_view);
++    aura::Window* content_window =
++        static_cast<aura::Window*>(GetWidget()->GetNativeView());
++    aura::Window* root_window =
++        content_window ? content_window->GetRootWindow() : nullptr;
++    if (root_window) {
++      // 使用 kSystem 优先以保证在 Omnibox 等消费前收到地址栏的 Ctrl+V
++      root_window->AddPreTargetHandler(
++          sync_input_capture_handler_.get(),
++          ui::EventTarget::Priority::kSystem);
++      native_window_for_sync_capture_ = root_window;
++      sync_capture_content_window_ = content_window;
++      // 仅挂到 root_window：同一事件会先到 root 再派发到 content，若两边都挂 handler 会触发两次导致从控重复（Ctrl+T 开两个、输入 aa）。
++      // root 作为事件树根会收到所有输入，只挂此处即可。
++#if defined(USE_AURA)
++      sync_capture_popup_roots_observer_ =
++          std::make_unique<SyncInputPopupRootsObserver>(
++              sync_input_capture_handler_.get(), &sync_capture_transient_roots_,
++              &sync_capture_transient_root_views_);
++      aura::client::TransientWindowClient* transient_client =
++          aura::client::GetTransientWindowClient();
++      if (transient_client) {
++        transient_client->AddObserver(this);
++        auto attach_to_transient = [this](aura::Window* child) {
++          aura::Window* trans_root = child->GetRootWindow();
++          if (trans_root && sync_input_capture_handler_ &&
++              trans_root != native_window_for_sync_capture_ &&
++              !base::Contains(sync_capture_transient_roots_, trans_root)) {
++            trans_root->AddPreTargetHandler(
++                sync_input_capture_handler_.get(),
++                ui::EventTarget::Priority::kSystem);
++            sync_capture_transient_roots_.push_back(trans_root);
++            sync_capture_transient_root_views_.push_back(nullptr);
++            if (sync_capture_popup_roots_observer_) {
++              sync_capture_popup_roots_observer_->AddRoot(trans_root);
++            }
++          }
++        };
++        for (aura::Window* child :
++             transient_client->GetTransientChildren(sync_capture_content_window_)) {
++          attach_to_transient(child);
++        }
++        for (aura::Window* child :
++             transient_client->GetTransientChildren(root_window)) {
++          attach_to_transient(child);
++        }
++      }
++      ChromeViewsDelegate::SetSyncInputOnWidgetInitialized(
++          base::BindRepeating(&BrowserView::OnSyncInputWidgetInitialized,
++                              base::Unretained(this)));
++      sync_input_capture_handler_->SetGetRootViewAndIndexCallback(
++          base::BindRepeating(
++              [](base::WeakPtr<BrowserView> weak_this, ui::LocatedEvent* ev) {
++                if (!weak_this)
++                  return std::make_pair(static_cast<views::View*>(nullptr),
++                                       size_t{0});
++                return weak_this->GetSyncCaptureRootViewAndIndexForEvent(ev);
++              },
++              GetAsWeakPtr()));
++      sync_input_capture_handler_->SetGetRootViewAndIndexForKeyEventCallback(
++          base::BindRepeating(
++              [](base::WeakPtr<BrowserView> weak_this, ui::Event* ev) {
++                if (!weak_this)
++                  return std::make_pair(static_cast<views::View*>(nullptr),
++                                       size_t{0});
++                return weak_this->GetSyncCaptureRootViewAndIndexForKeyEvent(ev);
++              },
++              GetAsWeakPtr()));
++#endif
++    } else {
++      root_view->AddPreTargetHandler(sync_input_capture_handler_.get());
++      root_view_for_sync_capture_ = root_view;
++    }
++    // 始终注册同步重放回调，避免 EventBus 晚于 InitViews 初始化时回调为空
++    simprint::eventbus::EventBus::GetInstance().SetSyncReplayCallback(
++        [](std::vector<uint8_t> data) {
++          content::GetUIThreadTaskRunner({})->PostTask(
++              FROM_HERE,
++              base::BindOnce(ReplaySyncInputEvent, std::move(data)));
++        });
++    simprint::eventbus::EventBus::GetInstance().SetSyncPasteReplayCallback(
++        [](std::u16string text) {
++          content::GetUIThreadTaskRunner({})->PostTask(
++              FROM_HERE,
++              base::BindOnce(ReplaySyncPaste, std::move(text)));
++        });
++    EnsureSyncCaptureOnActiveWebContents();
++  }
++
+   // WebAppFrameToolbarView depends on ImmersiveModeController so initialize it
+   // here.
+   if (GetIsWebAppType()) {
+@@ -5348,6 +5557,184 @@ void BrowserView::AddedToWidget() {
+   initialized_ = true;
+ }
+ 
++void BrowserView::OnSyncInputWidgetInitialized(views::Widget* widget) {
++#if defined(USE_AURA)
++  if (!sync_input_capture_handler_ || !widget) {
++    return;
++  }
++  aura::Window* content = static_cast<aura::Window*>(widget->GetNativeView());
++  aura::Window* root = content ? content->GetRootWindow() : nullptr;
++  if (!root || root == native_window_for_sync_capture_) {
++    return;
++  }
++  auto it = std::ranges::find(sync_capture_transient_roots_, root);
++  if (it != sync_capture_transient_roots_.end()) {
++    size_t idx = static_cast<size_t>(it - sync_capture_transient_roots_.begin());
++    if (idx < sync_capture_transient_root_views_.size()) {
++      sync_capture_transient_root_views_[idx] = widget->GetRootView();
++    }
++    return;
++  }
++  root->AddPreTargetHandler(sync_input_capture_handler_.get(),
++                            ui::EventTarget::Priority::kSystem);
++  sync_capture_transient_roots_.push_back(root);
++  sync_capture_transient_root_views_.push_back(widget->GetRootView());
++  if (sync_capture_popup_roots_observer_) {
++    sync_capture_popup_roots_observer_->AddRoot(root);
++  }
++#endif
++}
++
++void BrowserView::OnTransientChildWindowAdded(aura::Window* parent,
++                                             aura::Window* transient_child) {
++  if (!sync_input_capture_handler_) {
++    return;
++  }
++  // 不按 parent 过滤：Windows 上部分弹出层（如 tab 右键菜单）可能不以本窗口为
++  // transient parent 注册，故对任意新 transient 都挂 handler，仅排除主窗口根避免重复。
++  aura::Window* trans_root = transient_child->GetRootWindow();
++  if (!trans_root || trans_root == native_window_for_sync_capture_) {
++    return;
++  }
++  if (base::Contains(sync_capture_transient_roots_, trans_root)) {
++    return;
++  }
++  trans_root->AddPreTargetHandler(sync_input_capture_handler_.get(),
++                                  ui::EventTarget::Priority::kSystem);
++  sync_capture_transient_roots_.push_back(trans_root);
++  sync_capture_transient_root_views_.push_back(nullptr);
++}
++
++void BrowserView::OnTransientChildWindowRemoved(aura::Window* parent,
++                                               aura::Window* transient_child) {
++  if (!sync_input_capture_handler_) {
++    return;
++  }
++  aura::Window* trans_root = transient_child->GetRootWindow();
++  if (!trans_root) {
++    return;
++  }
++  auto it = std::ranges::find(sync_capture_transient_roots_, trans_root);
++  if (it == sync_capture_transient_roots_.end()) {
++    return;
++  }
++  if (sync_capture_popup_roots_observer_) {
++    sync_capture_popup_roots_observer_->RemoveRoot(trans_root);
++    trans_root->RemoveObserver(sync_capture_popup_roots_observer_.get());
++  }
++  trans_root->RemovePreTargetHandler(sync_input_capture_handler_.get());
++  size_t idx = static_cast<size_t>(it - sync_capture_transient_roots_.begin());
++  sync_capture_transient_roots_.erase(it);
++  if (idx < sync_capture_transient_root_views_.size()) {
++    sync_capture_transient_root_views_.erase(
++        sync_capture_transient_root_views_.begin() + static_cast<ptrdiff_t>(idx));
++  }
++}
++
++void BrowserView::EnsureSyncCaptureOnActiveWebContents() {
++#if defined(USE_AURA)
++  if (!sync_input_capture_handler_ || !native_window_for_sync_capture_) {
++    return;
++  }
++  content::WebContents* active = GetActiveWebContents();
++  aura::Window* target_window = nullptr;
++  if (active) {
++    gfx::NativeView nv = active->GetNativeView();
++    target_window = static_cast<aura::Window*>(nv);
++  }
++  if (target_window == sync_capture_web_contents_window_) {
++    return;
++  }
++  // 不再向 content 窗口挂 handler（root 已覆盖），避免同一按键触发两次 OnKeyEvent
++  sync_capture_web_contents_window_ = target_window;
++#endif
++}
++
++std::pair<views::View*, size_t>
++BrowserView::GetSyncCaptureRootViewAndIndexForEvent(ui::LocatedEvent* event) {
++  views::View* main_root = GetWidget() ? GetWidget()->GetRootView() : nullptr;
++#if defined(USE_AURA)
++  if (!event || !event->target() || !native_window_for_sync_capture_ ||
++      !main_root) {
++    return {main_root, 0};
++  }
++  // Aura 下事件目标为 aura::Window（RTTI 关闭故不用 dynamic_cast）；先取 root 再使用
++  aura::Window* event_window = static_cast<aura::Window*>(event->target());
++  aura::Window* root = event_window ? event_window->GetRootWindow() : nullptr;
++  if (!root) {
++    return {main_root, 0};
++  }
++  if (root == native_window_for_sync_capture_) {
++    return {main_root, 0};
++  }
++  auto it = std::ranges::find(sync_capture_transient_roots_, root);
++  if (it == sync_capture_transient_roots_.end()) {
++    return {main_root, 0};
++  }
++  size_t idx = static_cast<size_t>(it - sync_capture_transient_roots_.begin());
++  views::View* view = (idx < sync_capture_transient_root_views_.size())
++                          ? sync_capture_transient_root_views_[idx].get()
++                          : nullptr;
++  // 弹出层 Widget 未就绪或已销毁时不要返回该 view，避免后续访问崩溃
++  if (!view || !view->GetWidget()) {
++    return {main_root, 0};
++  }
++  return {view, idx + 1};
++#else
++  return {main_root, 0};
++#endif
++}
++
++std::pair<views::View*, size_t>
++BrowserView::GetSyncCaptureRootViewAndIndexForKeyEvent(ui::Event* event) {
++  views::View* main_root = GetWidget() ? GetWidget()->GetRootView() : nullptr;
++#if defined(USE_AURA)
++  if (!event || !event->target() || !native_window_for_sync_capture_ ||
++      !main_root) {
++    return {main_root, 0};
++  }
++  aura::Window* event_window = static_cast<aura::Window*>(event->target());
++  aura::Window* root = event_window ? event_window->GetRootWindow() : nullptr;
++  if (!root) {
++    return {main_root, 0};
++  }
++  if (root == native_window_for_sync_capture_) {
++    return {main_root, 0};
++  }
++  auto it = std::ranges::find(sync_capture_transient_roots_, root);
++  if (it == sync_capture_transient_roots_.end()) {
++    return {main_root, 0};
++  }
++  size_t idx = static_cast<size_t>(it - sync_capture_transient_roots_.begin());
++  views::View* view = (idx < sync_capture_transient_root_views_.size())
++                          ? sync_capture_transient_root_views_[idx].get()
++                          : nullptr;
++  if (!view || !view->GetWidget()) {
++    return {main_root, 0};
++  }
++  return {view, idx + 1};
++#else
++  return {main_root, 0};
++#endif
++}
++
++std::vector<views::View*> BrowserView::GetSyncReplayRootViews() {
++  std::vector<views::View*> out;
++  views::Widget* main_widget = GetWidget();
++  if (!main_widget) {
++    return out;
++  }
++  out.push_back(main_widget->GetRootView());
++#if defined(USE_AURA)
++  // 与主控相同：使用 TransientObserver + OnSyncInputWidgetInitialized 维护的列表，
++  // 保证主从 root_index 一一对应。GetTransientChildren 无法可靠枚举菜单等弹出层。
++  for (const raw_ptr<views::View>& v : sync_capture_transient_root_views_) {
++    out.push_back(v.get());
++  }
++#endif
++  return out;
++}
++
+ void BrowserView::RemovedFromWidget() {
+   CHECK(GetFocusManager());
+   focus_manager_observation_.Reset();
