@@ -66,12 +66,15 @@ def build() -> None:
 
 def main() -> None:
     if len(sys.argv) < 2:
-        print("Usage: run.py <apply|deploy|build>", file=sys.stderr)
+        print("Usage: run.py <apply|deploy|apply_deploy|build>", file=sys.stderr)
         raise SystemExit(1)
     phase = sys.argv[1].lower()
     if phase == "apply":
         apply_()
     elif phase == "deploy":
+        deploy()
+    elif phase == "apply_deploy":
+        apply_()
         deploy()
     elif phase == "build":
         build()

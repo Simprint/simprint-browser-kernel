@@ -4,5 +4,6 @@ integration
 branding
 ntp
 syner
+auth
 fingerprint
 shared

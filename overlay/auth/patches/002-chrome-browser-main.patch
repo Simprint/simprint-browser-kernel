@@ -1,0 +1,35 @@
+diff --git a/chrome/browser/chrome_browser_main.cc b/chrome/browser/chrome_browser_main.cc
+index 9011d873638c3..399b29ed42e2c 100644
+--- a/chrome/browser/chrome_browser_main.cc
++++ b/chrome/browser/chrome_browser_main.cc
+@@ -139,6 +139,7 @@
+ 
+ #if BUILDFLAG(IS_WIN)
+ #include "simprint/eventbus/eventbus.h"
++#include "simprint/auth/startup_auth_checker.h"
+ #endif
+ 
+ // Per-platform #include blocks, in alphabetical order.
+@@ -1571,14 +1572,21 @@ void ChromeBrowserMainParts::PostBrowserStart() {
+   browser_process_->browser_policy_connector()->OnBrowserStarted();
+ 
+ #if BUILDFLAG(IS_WIN)
+-  // Initialize Simprint EventBus if env_id is provided
++  // Simprint 认证检查：确保只有通过 Tauri 启动且已登录的用户才能使用浏览器
+   {
+     const base::CommandLine* command_line =
+         base::CommandLine::ForCurrentProcess();
+     if (command_line->HasSwitch("simprint-env-id")) {
++      // 通过 Tauri 启动：初始化 EventBus 并通过 IPC 查询认证状态
+       std::string env_id =
+           command_line->GetSwitchValueASCII("simprint-env-id");
+       simprint::eventbus::EventBus::GetInstance().Initialize(env_id);
++
++      // 启动认证检查：超时 5 秒，未登录或 IPC 异常 → 静默退出
++      simprint::auth::StartupAuthChecker::Check(5000);
++    } else {
++      // 直接启动（未通过 Tauri）：立即退出
++      simprint::auth::StartupAuthChecker::ExitBrowserSilently();
+     }
+   }
+ #endif

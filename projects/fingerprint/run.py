@@ -8,10 +8,10 @@ import sys
 
 def main() -> None:
     if len(sys.argv) < 2:
-        print("Usage: run.py <apply|deploy|build>", file=sys.stderr)
+        print("Usage: run.py <apply|deploy|apply_deploy|build>", file=sys.stderr)
         raise SystemExit(1)
     phase = sys.argv[1].lower()
-    if phase not in ("apply", "deploy", "build"):
+    if phase not in ("apply", "deploy", "apply_deploy", "build"):
         print(f"Unknown phase: {phase}", file=sys.stderr)
         raise SystemExit(1)
     # 占位：暂无补丁与部署逻辑

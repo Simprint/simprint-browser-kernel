@@ -1,0 +1,144 @@
+diff --git a/simprint/eventbus/eventbus.cc b/simprint/eventbus/eventbus.cc
+index 63ecf9ae49d19..e174d8870bc86 100644
+--- a/simprint/eventbus/eventbus.cc
++++ b/simprint/eventbus/eventbus.cc
+@@ -8,9 +8,11 @@
+ #include <cstdint>
+ #include <sstream>
+ 
++#include "base/json/json_reader.h"
+ #include "base/logging.h"
+ #include "base/no_destructor.h"
+ #include "base/strings/utf_string_conversions.h"
++#include "base/values.h"
+ #include "chrome/browser/lifetime/application_lifetime_desktop.h"
+ #include "chrome/browser/ui/browser.h"
+ #include "chrome/browser/ui/browser_finder.h"
+@@ -61,6 +63,10 @@ EventBus::~EventBus() {
+   Shutdown();
+ }
+ 
++EventBus::AuthInfo::AuthInfo() = default;
++
++EventBus::AuthInfo::~AuthInfo() = default;
++
+ void EventBus::Initialize(const std::string& env_id) {
+   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+ 
+@@ -158,6 +164,40 @@ bool EventBus::SendEvent(Topic topic, std::vector<uint8_t> data) {
+   return transport_->Send(message);
+ }
+ 
++void EventBus::SetAuthStatusCallback(AuthStatusCallback callback) {
++  auth_status_callback_ = std::move(callback);
++}
++
++void EventBus::RequestAuthInfo() {
++  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
++
++  if (!IsConnected()) {
++    return;
++  }
++
++  SendRequest(Topic::kAuthRequest, {});
++}
++
++void EventBus::RequestAuthInfoWithTimeout(
++    int timeout_ms,
++    base::OnceClosure timeout_callback) {
++  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
++
++  // 启动超时计时器（无论是否已连接）
++  auth_timeout_timer_ = std::make_unique<base::OneShotTimer>();
++  auth_timeout_timer_->Start(
++      FROM_HERE,
++      base::Milliseconds(timeout_ms),
++      std::move(timeout_callback));
++
++  // 如果已连接，立即发送请求；否则标记为待处理，等待握手完成后发送
++  if (IsConnected()) {
++    SendRequest(Topic::kAuthRequest, {});
++  } else {
++    pending_auth_request_ = true;
++  }
++}
++
+ void EventBus::RegisterHandler(std::unique_ptr<MessageHandler> handler) {
+   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+ 
+@@ -369,6 +409,75 @@ void EventBus::HandleHandshakeResponse(const Message& message) {
+     return std::nullopt;
+   });
+ 
++  // 注册 LaunchConfig handler：接收 Tauri 发送的启动配置（user_data_dir、proxy 等）
++  RegisterHandler(Topic::kLaunchConfig, [](const Message& msg) -> std::optional<HandlerResponse> {
++    if (msg.data.empty()) {
++      return std::nullopt;
++    }
++
++    std::string json_str(msg.data.begin(), msg.data.end());
++    auto value = base::JSONReader::Read(json_str, base::JSON_PARSE_RFC);
++
++    if (!value || !value->is_dict()) {
++      return std::nullopt;
++    }
++
++    // 注意：这些配置在浏览器启动后接收，大部分配置（如 user_data_dir、proxy）
++    // 需要在启动时通过命令行参数设置，这里接收主要用于验证配置是否正确传递
++    // 未来可能用于动态配置更新（如扩展加载）
++
++    return std::nullopt;
++  });
++
++  // 注册 AuthResponse handler：接收 Tauri 发送的认证信息
++  RegisterHandler(Topic::kAuthResponse, [this](const Message& msg) -> std::optional<HandlerResponse> {
++    if (auth_timeout_timer_ && auth_timeout_timer_->IsRunning()) {
++      auth_timeout_timer_->Stop();
++    }
++
++    if (msg.data.empty()) {
++      return std::nullopt;
++    }
++
++    std::string json_str(msg.data.begin(), msg.data.end());
++    auto value = base::JSONReader::Read(json_str, base::JSON_PARSE_RFC);
++
++    if (!value || !value->is_dict()) {
++      return std::nullopt;
++    }
++
++    const base::Value::Dict& auth_data = value->GetDict();
++
++    std::optional<bool> is_authenticated = auth_data.FindBool("is_authenticated");
++    const std::string* access_token = auth_data.FindString("access_token");
++    const base::Value::Dict* user_info = auth_data.FindDict("user_info");
++
++    cached_auth_info_.is_authenticated = is_authenticated.value_or(false);
++    cached_auth_info_.access_token = access_token ? *access_token : "";
++
++    if (user_info) {
++      const std::string* user_id = user_info->FindString("user_id");
++      const std::string* username = user_info->FindString("username");
++      cached_auth_info_.user_id = user_id ? *user_id : "";
++      cached_auth_info_.username = username ? *username : "";
++    } else {
++      cached_auth_info_.user_id.clear();
++      cached_auth_info_.username.clear();
++    }
++
++    if (auth_status_callback_) {
++      auth_status_callback_(cached_auth_info_);
++    }
++
++    return std::nullopt;
++  });
++
++  // 如果有待处理的认证请求，现在发送
++  if (pending_auth_request_) {
++    pending_auth_request_ = false;
++    SendRequest(Topic::kAuthRequest, {});
++  }
++
+   NotifyHandshakeComplete();
+ }
+ 

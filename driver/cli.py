@@ -51,8 +51,7 @@ def main() -> None:
     elif args.command == "build":
         runner.run_phase(repo_root, chromium_src, "build", project_filter, out_dir)
     elif args.command == "apply-and-prepare":
-        runner.run_phase(repo_root, chromium_src, "apply", project_filter, out_dir)
-        runner.run_phase(repo_root, chromium_src, "deploy", project_filter, out_dir)
+        runner.run_phase(repo_root, chromium_src, "apply_deploy", project_filter, out_dir)
         print("Apply and prepare done. Next: gn gen and build in Chromium.")
 
 
