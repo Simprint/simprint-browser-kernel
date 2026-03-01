@@ -23,7 +23,6 @@
 #include "ui/events/types/event_type.h"
 #include "ui/gfx/geometry/point.h"
 #include "ui/gfx/geometry/point_f.h"
-#include "simprint/console_log/console_log.h"
 #include "simprint/eventbus/eventbus.h"
 #include "ui/views/focus/focus_manager.h"
 #include "ui/views/view.h"

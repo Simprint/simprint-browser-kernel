@@ -1,4 +1,5 @@
 // Copyright 2024 Simprint. All rights reserved.
+#include "base/logging.h"
 
 #include "chrome/browser/ui/views/frame/sync_input_capture_handler.h"
 
@@ -13,7 +14,6 @@
 #include "chrome/browser/ui/browser.h"
 #include "chrome/browser/ui/browser_finder.h"
 #include "chrome/browser/ui/views/frame/browser_view.h"
-#include "simprint/console_log/console_log.h"
 #include "simprint/eventbus/eventbus.h"
 #include "simprint/eventbus/topics.h"
 #include "ui/aura/window.h"
