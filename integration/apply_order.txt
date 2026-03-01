@@ -1,2 +1,0 @@
-# integration 接入用 patch 应用顺序（当前无 patch，将来可在此列出）
-# 一行一个文件名
