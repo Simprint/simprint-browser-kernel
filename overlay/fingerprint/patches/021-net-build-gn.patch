@@ -1,0 +1,12 @@
+diff --git a/net/BUILD.gn b/net/BUILD.gn
+index 0a78202f61958..c7f7017a5f90f 100644
+--- a/net/BUILD.gn
++++ b/net/BUILD.gn
+@@ -1183,6 +1183,7 @@ component("net") {
+     "//components/network_time/time_tracker",
+     "//components/unexportable_keys",
+     "//net/http:transport_security_state_generated_files",
++    "//simprint/config",
+     "//third_party/simdutf",
+   ]
+ 

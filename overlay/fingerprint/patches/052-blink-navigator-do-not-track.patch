@@ -1,0 +1,23 @@
+diff --git a/third_party/blink/renderer/modules/donottrack/navigator_do_not_track.cc b/third_party/blink/renderer/modules/donottrack/navigator_do_not_track.cc
+index 73fe45f650683..296d8c59085bb 100644
+--- a/third_party/blink/renderer/modules/donottrack/navigator_do_not_track.cc
++++ b/third_party/blink/renderer/modules/donottrack/navigator_do_not_track.cc
+@@ -34,11 +34,18 @@
+ #include "third_party/blink/renderer/core/frame/local_frame.h"
+ #include "third_party/blink/renderer/core/frame/local_frame_client.h"
+ #include "third_party/blink/renderer/core/frame/navigator.h"
++#include "simprint/fingerprint/behavior_device_settings.h"
+ 
+ namespace blink {
+ namespace NavigatorDoNotTrack {
+ 
+ String doNotTrack(Navigator& navigator) {
++  // 指纹拦截：检查是否配置了自定义 Do Not Track
++  std::optional<bool> configured_dnt = simprint::fingerprint::BehaviorDeviceSettings::GetConfiguredDoNotTrack();
++  if (configured_dnt.has_value()) {
++    return configured_dnt.value() ? "1" : "0";
++  }
++
+   LocalDOMWindow* window = navigator.DomWindow();
+   return window ? window->GetFrame()->Client()->DoNotTrackValue() : String();
+ }

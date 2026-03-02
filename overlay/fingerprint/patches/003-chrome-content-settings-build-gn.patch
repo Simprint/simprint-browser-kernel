@@ -1,0 +1,12 @@
+diff --git a/chrome/browser/content_settings/BUILD.gn b/chrome/browser/content_settings/BUILD.gn
+index 420df6a36b4a0..38e5eeecb9916 100644
+--- a/chrome/browser/content_settings/BUILD.gn
++++ b/chrome/browser/content_settings/BUILD.gn
+@@ -157,6 +157,7 @@ source_set("content_settings_factory_impl") {
+     "//components/content_settings/core/browser:cookie_settings",
+     "//components/permissions:permissions_common",
+     "//components/supervised_user/core/browser",
++    "//simprint/fingerprint",
+     "//ui/webui",
+   ]
+ 

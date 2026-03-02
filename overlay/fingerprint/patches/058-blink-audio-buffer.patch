@@ -1,0 +1,45 @@
+diff --git a/third_party/blink/renderer/modules/webaudio/audio_buffer.cc b/third_party/blink/renderer/modules/webaudio/audio_buffer.cc
+index 40a355dec4aad..ee8613b53ecfd 100644
+--- a/third_party/blink/renderer/modules/webaudio/audio_buffer.cc
++++ b/third_party/blink/renderer/modules/webaudio/audio_buffer.cc
+@@ -28,6 +28,8 @@
+ 
+ #include "third_party/blink/renderer/modules/webaudio/audio_buffer.h"
+ 
++#include "simprint/fingerprint/browser_fingerprint.h"
++
+ #include <memory>
+ 
+ #include "base/compiler_specific.h"
+@@ -220,7 +222,17 @@ NotShared<DOMFloat32Array> AudioBuffer::getChannelData(unsigned channel_index) {
+     return NotShared<DOMFloat32Array>(nullptr);
+   }
+ 
+-  return NotShared<DOMFloat32Array>(channels_[channel_index].Get());
++  NotShared<DOMFloat32Array> channel_data = NotShared<DOMFloat32Array>(channels_[channel_index].Get());
++
++  // 应用 Audio 指纹噪声
++  if (channel_data && channel_data->Data()) {
++    simprint::fingerprint::BrowserFingerprint::ApplyAudioNoise(
++      channel_data->Data(),
++      channel_data->length()
++    );
++  }
++
++  return channel_data;
+ }
+ 
+ void AudioBuffer::copyFromChannel(NotShared<DOMFloat32Array> destination,
+@@ -266,6 +278,12 @@ void AudioBuffer::copyFromChannel(NotShared<DOMFloat32Array> destination,
+   DCHECK(dst.data());
+ 
+   dst.first(count).copy_from(src.subspan(buffer_offset, count));
++
++  // 应用 Audio 指纹噪声到目标数组
++  simprint::fingerprint::BrowserFingerprint::ApplyAudioNoise(
++    dst.data(),
++    dst.size()
++  );
+ }
+ 
+ void AudioBuffer::copyToChannel(NotShared<DOMFloat32Array> source,

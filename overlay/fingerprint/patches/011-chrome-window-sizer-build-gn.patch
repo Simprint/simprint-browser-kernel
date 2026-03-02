@@ -1,0 +1,12 @@
+diff --git a/chrome/browser/ui/window_sizer/BUILD.gn b/chrome/browser/ui/window_sizer/BUILD.gn
+index 3982a99aa2d9e..6ef2fa59542c4 100644
+--- a/chrome/browser/ui/window_sizer/BUILD.gn
++++ b/chrome/browser/ui/window_sizer/BUILD.gn
+@@ -39,6 +39,7 @@ source_set("impl") {
+     "//components/prefs",
+     "//ui/base",
+     "//ui/display",
++    "//simprint/fingerprint",
+   ]
+ 
+   if (is_mac) {

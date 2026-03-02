@@ -1,0 +1,54 @@
+diff --git a/third_party/blink/renderer/core/css/font_face_set.cc b/third_party/blink/renderer/core/css/font_face_set.cc
+index 5c0e930ae829f..5d2f31f08b0c7 100644
+--- a/third_party/blink/renderer/core/css/font_face_set.cc
++++ b/third_party/blink/renderer/core/css/font_face_set.cc
+@@ -1,9 +1,13 @@
+ // Copyright 2017 The Chromium Authors
++#include "base/logging.h"
+ // Use of this source code is governed by a BSD-style license that can be
+ // found in the LICENSE file.
+ 
+ #include "third_party/blink/renderer/core/css/font_face_set.h"
+ 
++#include <algorithm>
++#include "simprint/fingerprint/browser_fingerprint.h"
++#include "simprint/config/fingerprint_config_storage.h"
+ #include "third_party/blink/renderer/bindings/core/v8/script_promise_resolver.h"
+ #include "third_party/blink/renderer/bindings/core/v8/v8_font_face_set_load_status.h"
+ #include "third_party/blink/renderer/core/css/font_face_cache.h"
+@@ -243,6 +247,35 @@ bool FontFaceSet::check(const String& font_string,
+     return false;
+   }
+ 
++  // Simprint: 字体白名单拦截
++  // 从 font_string 中提取字体名称（例如 "12px Arial" -> "Arial"）
++  std::string font_str = font_string.Utf8();
++  size_t last_space = font_str.find_last_of(' ');
++  std::string font_family;
++  if (last_space != std::string::npos) {
++    font_family = font_str.substr(last_space + 1);
++  } else {
++    font_family = font_str;
++  }
++
++  // 移除引号
++  if (!font_family.empty() && (font_family.front() == '\'' || font_family.front() == '"')) {
++    font_family = font_family.substr(1, font_family.length() - 2);
++  }
++
++  // 获取字体白名单
++  std::vector<std::string> font_list = simprint::config::GetFontList();
++
++  // 检查字体是否在白名单中
++  bool in_whitelist = std::find(font_list.begin(), font_list.end(), font_family) != font_list.end();
++
++  if (!in_whitelist) {
++    LOG(INFO) << "[Simprint Font] FontFaceSet.check() blocked: " << font_family;
++    return false;  // 不在白名单中，返回 false（字体不可用）
++  }
++
++  LOG(INFO) << "[Simprint Font] FontFaceSet.check() allowed: " << font_family;
++
+   FontSelector* font_selector = GetFontSelector();
+   FontFaceCache* font_face_cache = font_selector->GetFontFaceCache();
+ 

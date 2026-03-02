@@ -1,0 +1,42 @@
+diff --git a/third_party/blink/renderer/core/geolocation/geolocation.cc b/third_party/blink/renderer/core/geolocation/geolocation.cc
+index 5ba0744d960b4..5bf34745a752d 100644
+--- a/third_party/blink/renderer/core/geolocation/geolocation.cc
++++ b/third_party/blink/renderer/core/geolocation/geolocation.cc
+@@ -51,6 +51,7 @@
+ #include "third_party/blink/renderer/core/timing/epoch_time_stamp.h"
+ #include "third_party/blink/renderer/platform/bindings/source_location.h"
+ #include "third_party/blink/renderer/platform/runtime_enabled_features.h"
++#include "simprint/fingerprint/network_location_fingerprint.h"
+ 
+ namespace blink {
+ namespace {
+@@ -65,6 +66,29 @@ const char kFeaturePolicyConsoleWarning[] =
+ 
+ Geoposition* CreateGeoposition(
+     const device::mojom::blink::Geoposition& position) {
++  // Simprint: 检查是否有配置的地理位置
++  double latitude = position.latitude;
++  double longitude = position.longitude;
++
++  if (simprint::fingerprint::NetworkLocationFingerprint::GetConfiguredGeolocation(&latitude, &longitude)) {
++    // 使用配置的经纬度
++    auto* coordinates = MakeGarbageCollected<GeolocationCoordinates>(
++        latitude, longitude,
++        position.altitude > -10000. ? std::make_optional(position.altitude)
++                                    : std::nullopt,
++        position.accuracy,
++        position.altitude_accuracy >= 0.
++            ? std::make_optional(position.altitude_accuracy)
++            : std::nullopt,
++        position.heading >= 0. && position.heading <= 360.
++            ? std::make_optional(position.heading)
++            : std::nullopt,
++        position.speed >= 0. ? std::optional(position.speed) : std::nullopt);
++    return MakeGarbageCollected<Geoposition>(
++        coordinates, ConvertTimeToEpochTimeStamp(position.timestamp));
++  }
++
++  // 使用原始位置
+   auto* coordinates = MakeGarbageCollected<GeolocationCoordinates>(
+       position.latitude, position.longitude,
+       // Lowest point on land is at approximately -400 meters.

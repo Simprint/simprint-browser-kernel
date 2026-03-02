@@ -1,0 +1,24 @@
+diff --git a/net/socket/ssl_client_socket_impl.cc b/net/socket/ssl_client_socket_impl.cc
+index 9cb2c324e9df1..b897ffca596c3 100644
+--- a/net/socket/ssl_client_socket_impl.cc
++++ b/net/socket/ssl_client_socket_impl.cc
+@@ -4,6 +4,8 @@
+ 
+ #include "net/socket/ssl_client_socket_impl.h"
+ 
++#include "simprint/config/fingerprint_config_storage.h"
++
+ #include <errno.h>
+ #include <string.h>
+ 
+@@ -842,7 +844,9 @@ int SSLClientSocketImpl::Init() {
+     }
+   }
+ 
+-  SSL_set_permute_extensions(ssl_.get(), 1);
++  // Simprint: SSL 指纹配置 - 控制扩展排列
++  bool enable_permute = simprint::config::GetSSLFingerprint();
++  SSL_set_permute_extensions(ssl_.get(), enable_permute ? 1 : 0);
+ 
+   // Configure BoringSSL to send Trust Anchor IDs, if provided.
+   if (ssl_config_.trust_anchor_ids.has_value() &&

@@ -1,0 +1,89 @@
+# Simprint Fingerprint Overlay - Patch Application Order
+# 指纹防护模块：配置系统 + 浏览器指纹伪装（Canvas、WebGL、Audio、字体等）
+# 由 git diff 879a34261b0ba..1a044afbb2149 生成
+
+# Chrome Browser
+001-chrome-browser-build-gn.patch
+002-chrome-content-browser-client.patch
+003-chrome-content-settings-build-gn.patch
+004-chrome-host-content-settings-map-factory.patch
+005-chrome-geolocation-permission-context-delegate.patch
+006-chrome-profile-network-context-service-cc.patch
+007-chrome-profile-network-context-service-h.patch
+008-chrome-ui-build-gn.patch
+009-chrome-sync-input-capture-handler.patch
+010-chrome-sync-input-replay.patch
+011-chrome-window-sizer-build-gn.patch
+012-chrome-window-sizer.patch
+
+# Components
+013-components-embedder-support-build-gn.patch
+014-components-user-agent-utils.patch
+
+# Content
+015-content-browser-build-gn.patch
+016-content-render-process-host-impl.patch
+017-content-renderer-mojom.patch
+018-content-renderer-build-gn.patch
+019-content-render-thread-impl-cc.patch
+020-content-render-thread-impl-h.patch
+
+# Net
+021-net-build-gn.patch
+022-net-network-interfaces-win.patch
+023-net-port-util.patch
+024-net-ssl-client-socket-impl.patch
+025-net-url-request-http-job.patch
+
+# Services
+026-services-network-context.patch
+
+# Simprint
+027-simprint-auth-build-gn.patch
+028-simprint-startup-auth-checker.patch
+029-simprint-eventbus-build-gn.patch
+030-simprint-eventbus.patch
+
+# Blink Core
+031-blink-core-build-gn.patch
+032-blink-css-font-selector.patch
+033-blink-font-face.patch
+034-blink-font-face-set.patch
+035-blink-element.patch
+036-blink-navigator-events.patch
+037-blink-navigator-base.patch
+038-blink-local-dom-window.patch
+039-blink-navigator-device-memory.patch
+040-blink-navigator-id.patch
+041-blink-navigator-language.patch
+042-blink-navigator-ua.patch
+043-blink-screen.patch
+044-blink-geolocation.patch
+045-blink-html-canvas-element.patch
+046-blink-text-metrics.patch
+047-blink-frame-fetch-context.patch
+048-blink-frame-loader.patch
+049-blink-offscreen-canvas.patch
+
+# Blink Modules
+050-blink-base-rendering-context-2d.patch
+051-blink-donottrack-build-gn.patch
+052-blink-navigator-do-not-track.patch
+053-blink-media-devices.patch
+054-blink-peerconnection-build-gn.patch
+055-blink-rtc-peer-connection-handler.patch
+056-blink-speech-build-gn.patch
+057-blink-speech-synthesis.patch
+058-blink-audio-buffer.patch
+059-blink-webgl-rendering-context-base.patch
+060-blink-webgpu-build-gn.patch
+061-blink-webgpu-gpu.patch
+062-blink-webgpu-gpu-adapter.patch
+
+# Blink Platform
+063-blink-platform-build-gn.patch
+064-blink-platform-exported.patch
+065-blink-font-cache.patch
+066-blink-language-cc.patch
+067-blink-language-h.patch
+068-blink-testing-platform-support.patch

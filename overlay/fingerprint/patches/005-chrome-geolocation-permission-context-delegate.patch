@@ -1,0 +1,46 @@
+diff --git a/chrome/browser/geolocation/geolocation_permission_context_delegate.cc b/chrome/browser/geolocation/geolocation_permission_context_delegate.cc
+index 1ebb5bee27451..85ef8708548b0 100644
+--- a/chrome/browser/geolocation/geolocation_permission_context_delegate.cc
++++ b/chrome/browser/geolocation/geolocation_permission_context_delegate.cc
+@@ -1,4 +1,5 @@
+ // Copyright 2020 The Chromium Authors
++#include "base/logging.h"
+ // Use of this source code is governed by a BSD-style license that can be
+ // found in the LICENSE file.
+ 
+@@ -12,6 +13,7 @@
+ #include "content/public/browser/render_frame_host.h"
+ #include "content/public/browser/web_contents.h"
+ #include "url/origin.h"
++#include "simprint/fingerprint/network_location_fingerprint.h"
+ 
+ GeolocationPermissionContextDelegate::GeolocationPermissionContextDelegate(
+     content::BrowserContext* browser_context)
+@@ -26,6 +28,27 @@ bool GeolocationPermissionContextDelegate::DecidePermission(
+     permissions::GeolocationPermissionContext* context) {
+   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+ 
++  // Simprint: 检查 geolocationPrompt 配置
++  std::string prompt_mode = simprint::fingerprint::NetworkLocationFingerprint::GetConfiguredGeolocationPrompt();
++  if (!prompt_mode.empty()) {
++    LOG(INFO) << "Simprint: Geolocation prompt mode = " << prompt_mode;
++
++    if (prompt_mode == "allow") {
++      // 自动允许地理位置权限
++      context->NotifyPermissionSet(request_data, std::move(*callback),
++                                   /*persist=*/false, PermissionDecision::kAllow,
++                                   /*is_final_decision=*/true);
++      return true;
++    } else if (prompt_mode == "forbid") {
++      // 自动拒绝地理位置权限
++      context->NotifyPermissionSet(request_data, std::move(*callback),
++                                   /*persist=*/false, PermissionDecision::kDeny,
++                                   /*is_final_decision=*/true);
++      return true;
++    }
++    // "ask" 模式：继续正常流程，显示权限提示
++  }
++
+   bool permission_set;
+   bool new_permission;
+   if (extensions_context_.DecidePermission(request_data.id,

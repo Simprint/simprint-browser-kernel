@@ -1,0 +1,53 @@
+diff --git a/third_party/blink/renderer/modules/mediastream/media_devices.cc b/third_party/blink/renderer/modules/mediastream/media_devices.cc
+index b4889339ffcf7..db953b4a5731b 100644
+--- a/third_party/blink/renderer/modules/mediastream/media_devices.cc
++++ b/third_party/blink/renderer/modules/mediastream/media_devices.cc
+@@ -4,6 +4,8 @@
+ 
+ #include "third_party/blink/renderer/modules/mediastream/media_devices.h"
+ 
++#include "simprint/fingerprint/browser_fingerprint.h"
++
+ #include <algorithm>
+ #include <utility>
+ 
+@@ -1342,7 +1344,38 @@ void MediaDevices::DevicesEnumerated(
+   }
+ 
+   ReportCompletedEnumerateDevices(result_contains_nonempty_input_device_ids);
+-  result_tracker->Resolve(media_devices);
++
++  // 应用 MediaDevices 指纹保护
++  std::string mode = simprint::fingerprint::BrowserFingerprint::GetConfiguredMediaDevicesMode();
++  if (!mode.empty() && mode != "real") {
++    // 如果启用了指纹保护，可以过滤或修改设备列表
++    // 例如：只保留第一个设备，或者修改设备标签
++    // 这里简单实现：限制每种类型只返回一个设备
++    MediaDeviceInfoVector filtered_devices;
++    bool has_audio_input = false;
++    bool has_video_input = false;
++    bool has_audio_output = false;
++
++    for (const auto& device : media_devices) {
++      mojom::blink::MediaDeviceType device_type = device->DeviceType();
++
++      if (device_type == mojom::blink::MediaDeviceType::kMediaAudioInput && !has_audio_input) {
++        filtered_devices.push_back(device);
++        has_audio_input = true;
++      } else if (device_type == mojom::blink::MediaDeviceType::kMediaVideoInput && !has_video_input) {
++        filtered_devices.push_back(device);
++        has_video_input = true;
++      } else if (device_type == mojom::blink::MediaDeviceType::kMediaAudioOutput && !has_audio_output) {
++        filtered_devices.push_back(device);
++        has_audio_output = true;
++      }
++    }
++
++    result_tracker->Resolve(filtered_devices);
++  } else {
++    result_tracker->Resolve(media_devices);
++  }
++
+   tracer->End();
+ }
+ 

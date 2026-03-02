@@ -1,0 +1,25 @@
+diff --git a/third_party/blink/renderer/core/frame/local_dom_window.cc b/third_party/blink/renderer/core/frame/local_dom_window.cc
+index 95137bfcdc4ce..8081e18ffc7b5 100644
+--- a/third_party/blink/renderer/core/frame/local_dom_window.cc
++++ b/third_party/blink/renderer/core/frame/local_dom_window.cc
+@@ -147,6 +147,7 @@
+ #include "third_party/blink/renderer/core/script/modulator.h"
+ #include "third_party/blink/renderer/core/scroll/scroll_types.h"
+ #include "third_party/blink/renderer/core/scroll/scrollbar_theme.h"
++#include "simprint/fingerprint/screen_hardware_fingerprint.h"
+ #include "third_party/blink/renderer/core/timing/dom_window_performance.h"
+ #include "third_party/blink/renderer/core/timing/soft_navigation_heuristics.h"
+ #include "third_party/blink/renderer/core/timing/window_performance.h"
+@@ -1832,6 +1833,12 @@ CSSStyleDeclaration* LocalDOMWindow::getComputedStyle(
+ }
+ 
+ double LocalDOMWindow::devicePixelRatio() const {
++  // Simprint: 检查是否有指纹配置
++  double configured = simprint::fingerprint::ScreenHardwareFingerprint::GetConfiguredDevicePixelRatio();
++  if (configured > 0.0) {
++    return configured;
++  }
++
+   if (!GetFrame())
+     return 0.0;
+ 

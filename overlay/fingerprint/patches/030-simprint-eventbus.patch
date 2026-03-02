@@ -1,0 +1,131 @@
+diff --git a/simprint/eventbus/eventbus.cc b/simprint/eventbus/eventbus.cc
+index e174d8870bc86..138c173a8de90 100644
+--- a/simprint/eventbus/eventbus.cc
++++ b/simprint/eventbus/eventbus.cc
+@@ -13,19 +13,27 @@
+ #include "base/no_destructor.h"
+ #include "base/strings/utf_string_conversions.h"
+ #include "base/values.h"
++#include "chrome/browser/browser_process.h"
+ #include "chrome/browser/lifetime/application_lifetime_desktop.h"
++#include "chrome/browser/net/profile_network_context_service.h"
++#include "chrome/browser/net/profile_network_context_service_factory.h"
++#include "chrome/browser/profiles/profile_manager.h"
+ #include "chrome/browser/ui/browser.h"
+ #include "chrome/browser/ui/browser_finder.h"
+ #include "chrome/browser/ui/browser_window.h"
+-#include "simprint/console_log/console_log.h"
++#include "simprint/fingerprint/fingerprint_config.h"
++#include "simprint/config/fingerprint_config_storage.h"
+ #include "ui/gfx/geometry/rect.h"
++#include "base/functional/bind.h"
++#include "base/strings/utf_string_conversions.h"
++#include "content/public/browser/browser_thread.h"
++#include "content/public/browser/render_frame_host.h"
++#include "content/public/browser/render_process_host.h"
++#include "content/public/browser/web_contents.h"
++#include "content/public/common/isolated_world_ids.h"
+ 
+-// 统一输出到 Chromium 日志 + 当前标签页 DevTools Console
+-#define SIMPRINT_LOG(msg) do { \
+-  std::ostringstream _oss; \
+-  _oss << "[Simprint] " << msg; \
+-  simprint::LogToConsole(_oss.str()); \
+-} while (0)
++// 统一日志输出
++#define SIMPRINT_LOG(msg) LOG(INFO) << "[Simprint][EventBus] " << msg
+ 
+ namespace simprint {
+ namespace eventbus {
+@@ -412,6 +420,7 @@ void EventBus::HandleHandshakeResponse(const Message& message) {
+   // 注册 LaunchConfig handler：接收 Tauri 发送的启动配置（user_data_dir、proxy 等）
+   RegisterHandler(Topic::kLaunchConfig, [](const Message& msg) -> std::optional<HandlerResponse> {
+     if (msg.data.empty()) {
++      SIMPRINT_LOG("LaunchConfig: 接收到空数据");
+       return std::nullopt;
+     }
+ 
+@@ -419,9 +428,34 @@ void EventBus::HandleHandshakeResponse(const Message& message) {
+     auto value = base::JSONReader::Read(json_str, base::JSON_PARSE_RFC);
+ 
+     if (!value || !value->is_dict()) {
++      SIMPRINT_LOG("LaunchConfig: JSON 解析失败");
+       return std::nullopt;
+     }
+ 
++    const base::Value::Dict& config = value->GetDict();
++    SIMPRINT_LOG("LaunchConfig: 成功接收配置，包含 " << config.size() << " 个字段");
++
++    // 打印所有配置字段
++    for (auto item : config) {
++      const std::string& key = item.first;
++      const base::Value& val = item.second;
++      std::ostringstream val_str;
++      if (val.is_string()) {
++        val_str << "\"" << val.GetString() << "\"";
++      } else if (val.is_bool()) {
++        val_str << (val.GetBool() ? "true" : "false");
++      } else if (val.is_int()) {
++        val_str << val.GetInt();
++      } else if (val.is_dict()) {
++        val_str << "{...}";
++      } else if (val.is_list()) {
++        val_str << "[...]";
++      } else {
++        val_str << "(其他类型)";
++      }
++      SIMPRINT_LOG("  - " << key << ": " << val_str.str());
++    }
++
+     // 注意：这些配置在浏览器启动后接收，大部分配置（如 user_data_dir、proxy）
+     // 需要在启动时通过命令行参数设置，这里接收主要用于验证配置是否正确传递
+     // 未来可能用于动态配置更新（如扩展加载）
+@@ -429,6 +463,48 @@ void EventBus::HandleHandshakeResponse(const Message& message) {
+     return std::nullopt;
+   });
+ 
++  // 注册 FingerprintApply handler：接收 Tauri 发送的指纹配置
++  RegisterHandler(Topic::kFingerprintApply, [](const Message& msg) -> std::optional<HandlerResponse> {
++    if (msg.data.empty()) {
++      SIMPRINT_LOG("FingerprintApply: 接收到空数据");
++      return std::nullopt;
++    }
++
++    std::string json_str(msg.data.begin(), msg.data.end());
++
++    // 使用指纹配置管理器解析并应用配置
++    auto* config_manager = simprint::fingerprint::FingerprintConfigManager::GetInstance();
++    if (config_manager->ApplyConfigFromJson(json_str)) {
++      SIMPRINT_LOG("FingerprintApply: 指纹配置已成功加载到管理器");
++
++      // Simprint: 配置加载成功后，更新所有 Profile 的 Accept-Language
++      LOG(INFO) << "[Simprint Language] Config loaded, updating Accept-Language for all profiles";
++
++      ProfileManager* profile_manager = g_browser_process->profile_manager();
++      if (profile_manager) {
++        std::vector<Profile*> profiles = profile_manager->GetLoadedProfiles();
++        LOG(INFO) << "[Simprint Language] Found " << profiles.size() << " loaded profiles";
++
++        for (Profile* profile : profiles) {
++          ProfileNetworkContextService* service =
++              ProfileNetworkContextServiceFactory::GetForContext(profile);
++          if (service) {
++            LOG(INFO) << "[Simprint Language] Calling UpdateAcceptLanguage for profile";
++            service->UpdateAcceptLanguage();
++          } else {
++            LOG(WARNING) << "[Simprint Language] ProfileNetworkContextService not found for profile";
++          }
++        }
++      } else {
++        LOG(WARNING) << "[Simprint Language] ProfileManager not found";
++      }
++    } else {
++      SIMPRINT_LOG("FingerprintApply: 指纹配置加载失败");
++    }
++
++    return std::nullopt;
++  });
++
+   // 注册 AuthResponse handler：接收 Tauri 发送的认证信息
+   RegisterHandler(Topic::kAuthResponse, [this](const Message& msg) -> std::optional<HandlerResponse> {
+     if (auth_timeout_timer_ && auth_timeout_timer_->IsRunning()) {

@@ -1,0 +1,28 @@
+# Copyright 2024 Simprint. All rights reserved.
+# 指纹管理模块构建配置
+
+import("//build/config/features.gni")
+
+source_set("fingerprint") {
+  sources = [
+    "behavior_device_settings.cc",
+    "behavior_device_settings.h",
+    "browser_fingerprint.cc",
+    "browser_fingerprint.h",
+    "fingerprint_config.cc",
+    "fingerprint_config.h",
+    "fingerprint_seed.cc",
+    "fingerprint_seed.h",
+    "network_location_fingerprint.cc",
+    "network_location_fingerprint.h",
+    "screen_hardware_fingerprint.cc",
+    "screen_hardware_fingerprint.h",
+    "window_settings.cc",
+    "window_settings.h",
+  ]
+
+  deps = [
+    "//base",
+    "//simprint/config",
+  ]
+}

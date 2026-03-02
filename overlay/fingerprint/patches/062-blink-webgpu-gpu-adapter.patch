@@ -1,0 +1,188 @@
+diff --git a/third_party/blink/renderer/modules/webgpu/gpu_adapter.cc b/third_party/blink/renderer/modules/webgpu/gpu_adapter.cc
+index 67cc57071404f..8826a15816097 100644
+--- a/third_party/blink/renderer/modules/webgpu/gpu_adapter.cc
++++ b/third_party/blink/renderer/modules/webgpu/gpu_adapter.cc
+@@ -4,6 +4,8 @@
+ 
+ #include "third_party/blink/renderer/modules/webgpu/gpu_adapter.h"
+ 
++#include <algorithm>
++
+ #include "services/metrics/public/cpp/ukm_builders.h"
+ #include "third_party/blink/renderer/bindings/core/v8/script_promise_resolver.h"
+ #include "third_party/blink/renderer/bindings/core/v8/v8_object_builder.h"
+@@ -25,10 +27,149 @@
+ #include "third_party/blink/renderer/platform/heap/garbage_collected.h"
+ #include "third_party/blink/renderer/platform/runtime_enabled_features.h"
+ 
++// Simprint: 引入指纹配置接口
++#include "simprint/fingerprint/browser_fingerprint.h"
++
+ namespace blink {
+ 
+ namespace {
+ 
++// Simprint: 从 WebGL renderer 字符串解析 GPU 信息
++struct ParsedGPUInfo {
++  std::string vendor;        // 例如 "nvidia", "intel", "amd"
++  std::string description;   // 例如 "NVIDIA GeForce RTX 4080"
++  std::string architecture;  // 例如 "ada", "ampere", "xe-lpg"
++};
++
++// Simprint: 根据 GPU 型号推断架构
++std::string InferArchitecture(const std::string& description) {
++  // NVIDIA 架构推断
++  if (description.find("RTX 40") != std::string::npos ||
++      description.find("RTX 4090") != std::string::npos ||
++      description.find("RTX 4080") != std::string::npos ||
++      description.find("RTX 4070") != std::string::npos ||
++      description.find("RTX 4060") != std::string::npos) {
++    return "ada";  // Ada Lovelace
++  }
++  if (description.find("RTX 30") != std::string::npos ||
++      description.find("RTX 3090") != std::string::npos ||
++      description.find("RTX 3080") != std::string::npos ||
++      description.find("RTX 3070") != std::string::npos ||
++      description.find("RTX 3060") != std::string::npos) {
++    return "ampere";
++  }
++  if (description.find("RTX 20") != std::string::npos ||
++      description.find("RTX 2080") != std::string::npos ||
++      description.find("RTX 2070") != std::string::npos ||
++      description.find("RTX 2060") != std::string::npos ||
++      description.find("GTX 16") != std::string::npos ||
++      description.find("GTX 1660") != std::string::npos ||
++      description.find("GTX 1650") != std::string::npos) {
++    return "turing";
++  }
++  if (description.find("GTX 10") != std::string::npos ||
++      description.find("GTX 1080") != std::string::npos ||
++      description.find("GTX 1070") != std::string::npos ||
++      description.find("GTX 1060") != std::string::npos) {
++    return "pascal";
++  }
++
++  // Intel 架构推断
++  if (description.find("Iris Xe") != std::string::npos ||
++      description.find("Xe") != std::string::npos) {
++    return "xe-lpg";
++  }
++  if (description.find("UHD Graphics") != std::string::npos ||
++      description.find("HD Graphics") != std::string::npos) {
++    return "gen12";
++  }
++
++  // AMD 架构推断
++  if (description.find("RX 7") != std::string::npos ||
++      description.find("RX 7900") != std::string::npos ||
++      description.find("RX 7800") != std::string::npos ||
++      description.find("RX 7700") != std::string::npos ||
++      description.find("RX 7600") != std::string::npos) {
++    return "rdna3";
++  }
++  if (description.find("RX 6") != std::string::npos ||
++      description.find("RX 6900") != std::string::npos ||
++      description.find("RX 6800") != std::string::npos ||
++      description.find("RX 6700") != std::string::npos ||
++      description.find("RX 6600") != std::string::npos) {
++    return "rdna2";
++  }
++  if (description.find("RX 5") != std::string::npos ||
++      description.find("RX 5700") != std::string::npos ||
++      description.find("RX 5600") != std::string::npos ||
++      description.find("RX 5500") != std::string::npos) {
++    return "rdna";
++  }
++
++  // 默认返回空字符串
++  return "";
++}
++
++// Simprint: 解析 WebGL renderer 字符串
++// 输入示例: "ANGLE (NVIDIA, NVIDIA GeForce RTX 4080 Direct3D11 vs_5_0 ps_5_0, D3D11)"
++// 或: "Google Inc. (NVIDIA)"
++ParsedGPUInfo ParseWebGLRenderer(const std::string& vendor_str, const std::string& renderer_str) {
++  ParsedGPUInfo info;
++
++  // 解析 vendor
++  // "Google Inc. (NVIDIA)" -> "nvidia"
++  size_t vendor_start = vendor_str.find('(');
++  size_t vendor_end = vendor_str.find(')');
++  if (vendor_start != std::string::npos && vendor_end != std::string::npos) {
++    std::string vendor_name = vendor_str.substr(vendor_start + 1, vendor_end - vendor_start - 1);
++    // 转换为小写
++    std::transform(vendor_name.begin(), vendor_name.end(), vendor_name.begin(), ::tolower);
++    info.vendor = vendor_name;
++  } else {
++    // 如果没有括号，直接使用整个字符串
++    std::string vendor_name = vendor_str;
++    std::transform(vendor_name.begin(), vendor_name.end(), vendor_name.begin(), ::tolower);
++    info.vendor = vendor_name;
++  }
++
++  // 解析 renderer
++  // "ANGLE (NVIDIA, NVIDIA GeForce RTX 4080 Direct3D11 vs_5_0 ps_5_0, D3D11)"
++  // 提取 "NVIDIA GeForce RTX 4080"
++  size_t angle_start = renderer_str.find("ANGLE (");
++  if (angle_start != std::string::npos) {
++    size_t comma1 = renderer_str.find(',', angle_start);
++    size_t comma2 = renderer_str.find(',', comma1 + 1);
++    if (comma1 != std::string::npos && comma2 != std::string::npos) {
++      std::string gpu_part = renderer_str.substr(comma1 + 1, comma2 - comma1 - 1);
++      // 去除前后空格
++      size_t start = gpu_part.find_first_not_of(" \t");
++      size_t end = gpu_part.find_last_not_of(" \t");
++      if (start != std::string::npos && end != std::string::npos) {
++        gpu_part = gpu_part.substr(start, end - start + 1);
++      }
++      // 移除 "Direct3D11 vs_5_0 ps_5_0" 等后缀
++      size_t direct3d_pos = gpu_part.find("Direct3D");
++      if (direct3d_pos != std::string::npos) {
++        gpu_part = gpu_part.substr(0, direct3d_pos);
++        // 再次去除尾部空格
++        end = gpu_part.find_last_not_of(" \t");
++        if (end != std::string::npos) {
++          gpu_part = gpu_part.substr(0, end + 1);
++        }
++      }
++      info.description = gpu_part;
++    }
++  } else {
++    // 如果不是 ANGLE 格式，直接使用 renderer 字符串
++    info.description = renderer_str;
++  }
++
++  // 推断架构
++  info.architecture = InferArchitecture(info.description);
++
++  return info;
++}
++
+ GPUSupportedFeatures* MakeFeatureNameSet(wgpu::Adapter adapter) {
+   GPUSupportedFeatures* features = MakeGarbageCollected<GPUSupportedFeatures>();
+   DCHECK(features->FeatureNameSet().empty());
+@@ -112,6 +253,24 @@ GPUAdapter::GPUAdapter(
+   subgroup_max_size_ = info.subgroupMaxSize;
+   power_preference_ = powerProperties.powerPreference;
+ 
++  // Simprint: 如果配置了 WebGL 指纹，用相同的 GPU 信息替换 WebGPU
++  std::string configured_vendor = simprint::fingerprint::BrowserFingerprint::GetConfiguredWebGLVendor();
++  std::string configured_renderer = simprint::fingerprint::BrowserFingerprint::GetConfiguredWebGLRenderer();
++
++  if (!configured_vendor.empty() && !configured_renderer.empty()) {
++    ParsedGPUInfo parsed = ParseWebGLRenderer(configured_vendor, configured_renderer);
++
++    if (!parsed.vendor.empty()) {
++      vendor_ = String::FromUTF8(parsed.vendor);
++    }
++    if (!parsed.description.empty()) {
++      description_ = String::FromUTF8(parsed.description);
++    }
++    if (!parsed.architecture.empty()) {
++      architecture_ = String::FromUTF8(parsed.architecture);
++    }
++  }
++
+   features_ = MakeFeatureNameSet(GetHandle());
+ 
+   GPUSupportedLimits::ComboLimits limits;

@@ -1,0 +1,21 @@
+diff --git a/chrome/browser/BUILD.gn b/chrome/browser/BUILD.gn
+index 142282158b2c1..96392ab48d995 100644
+--- a/chrome/browser/BUILD.gn
++++ b/chrome/browser/BUILD.gn
+@@ -2624,6 +2624,8 @@ static_library("browser") {
+     "//ui/snapshot",
+     "//ui/strings",
+     "//ui/webui",
++    "//simprint/config",
++    "//simprint/fingerprint",
+ 
+     # TODO(crbug.com/430804948): Remove this dependency when profiles/profile_manager.h
+     # gets componentized.
+@@ -8570,6 +8572,7 @@ static_library("browser_public_dependencies") {
+       "//chrome/services/util_win/public/mojom",
+       "//simprint/auth",
+       "//simprint/eventbus",
++      "//simprint/fingerprint",
+       "//ui/views",
+       "//ui/views/controls/webview",
+     ]

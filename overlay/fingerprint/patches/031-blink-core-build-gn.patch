@@ -1,0 +1,12 @@
+diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
+index 0813930230f26..fa2eb4132ad42 100644
+--- a/third_party/blink/renderer/core/BUILD.gn
++++ b/third_party/blink/renderer/core/BUILD.gn
+@@ -407,6 +407,7 @@ component("core") {
+     ":make_deprecation_info",
+     ":xml_ffi",
+     "//base",
++    "//simprint/fingerprint",
+     "//components/attribution_reporting",
+     "//components/attribution_reporting:mojom_blink",
+     "//components/paint_preview/common",

@@ -1,0 +1,12 @@
+diff --git a/content/renderer/BUILD.gn b/content/renderer/BUILD.gn
+index ee387002e8dbb..95cdf43eacd8f 100644
+--- a/content/renderer/BUILD.gn
++++ b/content/renderer/BUILD.gn
+@@ -270,6 +270,7 @@ target(link_target_type, "renderer") {
+     "//media:media_buildflags",
+     "//media/capture",
+     "//media/gpu",
++    "//simprint/config",
+     "//media/gpu/ipc/common",
+     "//media/midi",
+     "//media/midi:mojo",

@@ -1,0 +1,38 @@
+diff --git a/third_party/blink/renderer/modules/peerconnection/rtc_peer_connection_handler.cc b/third_party/blink/renderer/modules/peerconnection/rtc_peer_connection_handler.cc
+index c1e6e14b10e00..0964514572a42 100644
+--- a/third_party/blink/renderer/modules/peerconnection/rtc_peer_connection_handler.cc
++++ b/third_party/blink/renderer/modules/peerconnection/rtc_peer_connection_handler.cc
+@@ -48,6 +48,7 @@
+ #include "third_party/blink/renderer/modules/peerconnection/rtc_rtp_receiver_impl.h"
+ #include "third_party/blink/renderer/modules/peerconnection/webrtc_set_description_observer.h"
+ #include "third_party/blink/renderer/modules/webrtc/webrtc_audio_device_impl.h"
++#include "simprint/fingerprint/network_location_fingerprint.h"
+ #include "third_party/blink/renderer/platform/heap/garbage_collected.h"
+ #include "third_party/blink/renderer/platform/json/json_values.h"
+ #include "third_party/blink/renderer/platform/mediastream/media_stream_component.h"
+@@ -2049,6 +2050,25 @@ void RTCPeerConnectionHandler::OnIceCandidate(const String& sdp,
+     return;
+   }
+   TRACE_EVENT0("webrtc", "RTCPeerConnectionHandler::OnIceCandidateImpl");
++
++  // Simprint: 检查是否需要过滤 ICE candidates
++  std::string webrtc_mode = simprint::fingerprint::NetworkLocationFingerprint::GetConfiguredWebRTCMode();
++  if (!webrtc_mode.empty() && webrtc_mode != "real") {
++    // 解析 SDP 以检查候选项类型
++    std::string sdp_str = sdp.Utf8();
++
++    if (webrtc_mode == "disable_non_proxied") {
++      // 只允许 relay 类型的候选项（通过 TURN 服务器）
++      if (sdp_str.find("typ relay") == std::string::npos) {
++        // 不是 relay 类型，丢弃此候选项
++        return;
++      }
++    } else if (webrtc_mode == "disable") {
++      // 完全禁用 ICE candidates
++      return;
++    }
++  }
++
+   // This line can cause garbage collection.
+   auto* platform_candidate = MakeGarbageCollected<RTCIceCandidatePlatform>(
+       sdp, sdp_mid, sdp_mline_index, usernameFragment, url);

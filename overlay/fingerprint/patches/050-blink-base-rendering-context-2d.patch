@@ -1,0 +1,29 @@
+diff --git a/third_party/blink/renderer/modules/canvas/canvas2d/base_rendering_context_2d.cc b/third_party/blink/renderer/modules/canvas/canvas2d/base_rendering_context_2d.cc
+index 0d8eb430d6a55..62a3c3a2e12a4 100644
+--- a/third_party/blink/renderer/modules/canvas/canvas2d/base_rendering_context_2d.cc
++++ b/third_party/blink/renderer/modules/canvas/canvas2d/base_rendering_context_2d.cc
+@@ -97,6 +97,7 @@
+ #include "third_party/blink/renderer/platform/wtf/forward.h"
+ #include "third_party/blink/renderer/platform/wtf/math_extras.h"
+ #include "third_party/blink/renderer/platform/wtf/text/wtf_string.h"
++#include "simprint/fingerprint/browser_fingerprint.h"
+ #include "ui/gfx/geometry/skia_conversions.h"
+ 
+ // Including "base/time/time.h" triggers a bug in IWYU.
+@@ -525,6 +526,16 @@ ImageData* BaseRenderingContext2D::getImageDataInternal(
+     }
+   }
+ 
++  // Simprint: 应用 Canvas 指纹噪声
++  if (image_data) {
++    SkPixmap pixmap = image_data->GetSkPixmap();
++    if (pixmap.writable_addr()) {
++      simprint::fingerprint::BrowserFingerprint::ApplyCanvasNoise(
++          static_cast<unsigned char*>(pixmap.writable_addr()),
++          pixmap.computeByteSize());
++    }
++  }
++
+   return image_data;
+ }
+ 

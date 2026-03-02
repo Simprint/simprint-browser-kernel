@@ -4,3 +4,4 @@ branding
 ntp
 syner
 auth
+fingerprint

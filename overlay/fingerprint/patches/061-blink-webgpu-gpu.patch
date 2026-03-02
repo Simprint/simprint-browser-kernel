@@ -1,0 +1,36 @@
+diff --git a/third_party/blink/renderer/modules/webgpu/gpu.cc b/third_party/blink/renderer/modules/webgpu/gpu.cc
+index 91608a830d9f0..abf27e1c011c2 100644
+--- a/third_party/blink/renderer/modules/webgpu/gpu.cc
++++ b/third_party/blink/renderer/modules/webgpu/gpu.cc
+@@ -45,6 +45,7 @@
+ #include "third_party/blink/renderer/platform/instrumentation/use_counter.h"
+ #include "third_party/blink/renderer/platform/weborigin/kurl.h"
+ #include "third_party/blink/renderer/platform/wtf/cross_thread_functional.h"
++#include "simprint/fingerprint/browser_fingerprint.h"
+ 
+ namespace blink {
+ 
+@@ -394,6 +395,23 @@ void GPU::RequestAdapterImpl(
+ ScriptPromise<IDLNullable<GPUAdapter>> GPU::requestAdapter(
+     ScriptState* script_state,
+     const GPURequestAdapterOptions* options) {
++  // Simprint: 检查 WebGPU 配置
++  std::string webgpu_mode = simprint::fingerprint::BrowserFingerprint::GetConfiguredWebGPUMode();
++
++  if (webgpu_mode == "disable") {
++    // 禁用 WebGPU，直接返回 null
++    auto* resolver =
++        MakeGarbageCollected<ScriptPromiseResolver<IDLNullable<GPUAdapter>>>(
++            script_state);
++    auto promise = resolver->Promise();
++    resolver->Resolve(nullptr);
++    return promise;
++  }
++
++  // 'webgl-match' 模式：返回与 WebGL 配置匹配的 GPU 信息
++  // 'real' 模式：使用真实的 GPU 信息
++  // 两种模式都继续执行正常的 requestAdapter 逻辑
++
+   // Remind developers when they are using WebGPU on unsupported platforms.
+   ExecutionContext* execution_context = GetExecutionContext();
+   if (execution_context &&
