@@ -1,0 +1,13 @@
+diff --git a/chrome/common/webui_url_constants.h b/chrome/common/webui_url_constants.h
+index a134c1e4b0242..ebe24d0898df5 100644
+--- a/chrome/common/webui_url_constants.h
++++ b/chrome/common/webui_url_constants.h
+@@ -260,6 +260,8 @@ inline constexpr char kChromeUIResetPasswordHost[] = "reset-password";
+ inline constexpr char kChromeUIResetPasswordURL[] = "chrome://reset-password/";
+ inline constexpr char kChromeUIRestartHost[] = "restart";
+ inline constexpr char kChromeUIRestartURL[] = "chrome://restart/";
++inline constexpr char kChromeUIReviewHost[] = "review";
++inline constexpr char kChromeUIReviewURL[] = "chrome://review/";
+ inline constexpr char kChromeUISafetyPixelbookURL[] =
+     "https://g.co/Pixelbook/legal";
+ inline constexpr char kChromeUISafetyPixelSlateURL[] =

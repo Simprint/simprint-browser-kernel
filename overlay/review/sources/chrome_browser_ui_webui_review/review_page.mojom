@@ -1,0 +1,96 @@
+// Copyright 2025 The Chromium Authors
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+module mojom.review_page;
+
+// IP information returned from the IP detection service.
+struct IpInfo {
+  string? ip;           // The detected IP address
+  string? country;      // Country name (e.g., "United States")
+  string? country_code; // Country code (e.g., "US")
+  string? city;         // City name
+  string? region;       // Region/State name
+  string? isp;          // ISP name
+  string? timezone;     // Timezone
+  bool success;         // Whether the detection was successful
+  string? error;        // Error message if detection failed
+};
+
+// Fingerprint configuration data
+struct FingerprintData {
+  // === 网络与定位 ===
+  string? language;
+  string? interface_language;
+  string? timezone;
+  string? geolocation_prompt;
+  string? geolocation;
+  string? platform;
+  string? user_agent;
+
+  // === 浏览器行为 ===
+  bool? sound;
+  bool? images;
+  bool? video;
+  bool? do_not_track;
+
+  // === 窗口设置 ===
+  string? window_size;
+  int32? window_width;
+  int32? window_height;
+  string? window_position;
+  int32? window_x;
+  int32? window_y;
+
+  // === 屏幕与硬件 ===
+  string? resolution;
+  int32? color_depth;
+  double? device_pixel_ratio;
+  int32? max_touch_points;
+  int32? hardware_concurrency;
+  int32? device_memory;
+
+  // === 浏览器指纹 ===
+  string? canvas;
+  string? webgl_image;
+  string? webgl_info;
+  string? webgl_vendor;
+  string? webgl_renderer;
+  string? webgpu;
+  string? font_fingerprint;
+  string? font_list_mode;
+  array<string>? font_list;
+  string? audio_context;
+  string? speech_voices;
+  string? client_rects;
+  string? media_devices;
+  string? webrtc;
+
+  // === 设备设置 ===
+  string? device_name;
+  bool? device_name_random;
+  string? mac_address;
+  string? mac_address_mode;
+  bool? ssl_fingerprint;
+  bool? port_scan_protection;
+  string? scan_whitelist;
+  bool? hardware_acceleration;
+  bool? disable_sandbox;
+  string? startup_parameters;
+
+  // === 偏好设置 ===
+  bool? random_fingerprint_on_launch;
+
+  // === 环境信息 ===
+  string? env_id;
+  string? env_name;
+};
+
+// Browser-side handler for review page requests from JS.
+interface ReviewPageHandler {
+  // Fetches the current fingerprint configuration.
+  GetFingerprintData() => (FingerprintData data);
+
+  // Fetches the current public IP address and location info.
+  GetIpInfo() => (IpInfo info);
+};

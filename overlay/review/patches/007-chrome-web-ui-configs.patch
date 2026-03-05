@@ -1,0 +1,20 @@
+diff --git a/chrome/browser/ui/webui/chrome_web_ui_configs.cc b/chrome/browser/ui/webui/chrome_web_ui_configs.cc
+index d185bfdfbb3c7..590d9330004fb 100644
+--- a/chrome/browser/ui/webui/chrome_web_ui_configs.cc
++++ b/chrome/browser/ui/webui/chrome_web_ui_configs.cc
+@@ -43,6 +43,7 @@
+ #include "chrome/browser/ui/webui/predictors/predictors_ui.h"
+ #include "chrome/browser/ui/webui/privacy_sandbox/privacy_sandbox_internals_ui.h"
+ #include "chrome/browser/ui/webui/regional_capabilities_internals/regional_capabilities_internals_ui.h"
++#include "chrome/browser/ui/webui/review/review_ui.h"
+ #include "chrome/browser/ui/webui/saved_tab_groups_unsupported/saved_tab_groups_unsupported_ui.h"
+ #include "chrome/browser/ui/webui/segmentation_internals/segmentation_internals_ui.h"
+ #include "chrome/browser/ui/webui/signin_internals_ui.h"
+@@ -282,6 +283,7 @@ void RegisterChromeWebUIConfigs() {
+       std::make_unique<
+           privacy_sandbox_internals::PrivacySandboxInternalsUIConfig>());
+   map.AddWebUIConfig(std::make_unique<RegionalCapabilitiesInternalsUIConfig>());
++  map.AddWebUIConfig(std::make_unique<ReviewUIConfig>());
+ 
+ #if BUILDFLAG(ENABLE_WEBUI_CERTIFICATE_VIEWER)
+   map.AddWebUIConfig(std::make_unique<CertificateViewerUIConfig>());

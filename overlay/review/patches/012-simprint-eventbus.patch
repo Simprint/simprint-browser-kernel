@@ -1,0 +1,80 @@
+diff --git a/simprint/eventbus/eventbus.cc b/simprint/eventbus/eventbus.cc
+index 138c173a8de90..7ce431c14b02f 100644
+--- a/simprint/eventbus/eventbus.cc
++++ b/simprint/eventbus/eventbus.cc
+@@ -13,6 +13,7 @@
+ #include "base/no_destructor.h"
+ #include "base/strings/utf_string_conversions.h"
+ #include "base/values.h"
++#include "build/build_config.h"
+ #include "chrome/browser/browser_process.h"
+ #include "chrome/browser/lifetime/application_lifetime_desktop.h"
+ #include "chrome/browser/net/profile_network_context_service.h"
+@@ -20,7 +21,10 @@
+ #include "chrome/browser/profiles/profile_manager.h"
+ #include "chrome/browser/ui/browser.h"
+ #include "chrome/browser/ui/browser_finder.h"
++#include "chrome/browser/ui/browser_list.h"
+ #include "chrome/browser/ui/browser_window.h"
++#include "chrome/browser/ui/tabs/tab_strip_model.h"
++#include "chrome/browser/ui/browser_tabstrip.h"
+ #include "simprint/fingerprint/fingerprint_config.h"
+ #include "simprint/config/fingerprint_config_storage.h"
+ #include "ui/gfx/geometry/rect.h"
+@@ -31,6 +35,7 @@
+ #include "content/public/browser/render_process_host.h"
+ #include "content/public/browser/web_contents.h"
+ #include "content/public/common/isolated_world_ids.h"
++#include "content/public/common/url_constants.h"
+ 
+ // 统一日志输出
+ #define SIMPRINT_LOG(msg) LOG(INFO) << "[Simprint][EventBus] " << msg
+@@ -495,6 +500,48 @@ void EventBus::HandleHandshakeResponse(const Message& message) {
+             LOG(WARNING) << "[Simprint Language] ProfileNetworkContextService not found for profile";
+           }
+         }
++
++        // Simprint: 配置加载成功后，检查是否需要打开 chrome://review 标签页
++        if (!profiles.empty()) {
++          Profile* profile = profiles[0];  // 使用第一个 profile
++
++          // 检查所有浏览器窗口是否已经有 chrome://review 标签页
++          bool review_tab_found = false;
++          const GURL review_url("chrome://review/");
++
++          for (Browser* browser : *BrowserList::GetInstance()) {
++            if (browser->profile() != profile) {
++              continue;
++            }
++
++            TabStripModel* tab_strip = browser->tab_strip_model();
++            for (int i = 0; i < tab_strip->count(); ++i) {
++              content::WebContents* web_contents = tab_strip->GetWebContentsAt(i);
++              if (web_contents) {
++                const GURL& url = web_contents->GetLastCommittedURL();
++                if (url.SchemeIs(content::kChromeUIScheme) && url.host() == "review") {
++                  review_tab_found = true;
++                  break;
++                }
++              }
++            }
++
++            if (review_tab_found) {
++              break;
++            }
++          }
++
++          // 如果没有找到 review 标签页，打开一个新的
++          if (!review_tab_found) {
++            Browser* browser = chrome::FindTabbedBrowser(profile, false);
++            if (browser) {
++              SIMPRINT_LOG("FingerprintApply: 自动打开 chrome://review 标签页");
++              chrome::AddTabAt(browser, review_url, -1, true);
++            }
++          } else {
++            SIMPRINT_LOG("FingerprintApply: chrome://review 标签页已存在，跳过打开");
++          }
++        }
+       } else {
+         LOG(WARNING) << "[Simprint Language] ProfileManager not found";
+       }

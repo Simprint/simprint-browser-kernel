@@ -1,0 +1,15 @@
+diff --git a/simprint/fingerprint/fingerprint_config.h b/simprint/fingerprint/fingerprint_config.h
+index 04fc486345fa6..3ca94ffda6894 100644
+--- a/simprint/fingerprint/fingerprint_config.h
++++ b/simprint/fingerprint/fingerprint_config.h
+@@ -104,6 +104,10 @@ struct FingerprintConfig {
+ 
+   // === 偏好设置 ===
+   std::optional<bool> random_fingerprint_on_launch;
++
++  // === 环境信息 ===
++  std::optional<std::string> env_id;
++  std::optional<std::string> env_name;
+ };
+ 
+ // 指纹配置管理器（单例）

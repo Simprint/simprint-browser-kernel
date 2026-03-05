@@ -1,0 +1,55 @@
+diff --git a/chrome/browser/ui/views/frame/browser_desktop_window_tree_host_win.cc b/chrome/browser/ui/views/frame/browser_desktop_window_tree_host_win.cc
+index 91c85936c2333..8057e24e6700d 100644
+--- a/chrome/browser/ui/views/frame/browser_desktop_window_tree_host_win.cc
++++ b/chrome/browser/ui/views/frame/browser_desktop_window_tree_host_win.cc
+@@ -29,6 +29,9 @@
+ #include "chrome/browser/ui/views/frame/browser_widget.h"
+ #include "chrome/browser/ui/views/frame/browser_window_property_manager_win.h"
+ #include "chrome/browser/ui/views/frame/system_menu_insertion_delegate_win.h"
++#include "chrome/browser/simprint/window_icon_manager_win.h"
++#include "chrome/common/chrome_switches.h"
++#include "base/command_line.h"
+ #include "chrome/browser/ui/views/frame/tab_strip_view_interface.h"
+ #include "chrome/browser/ui/views/tabs/tab_strip.h"
+ #include "chrome/browser/win/app_icon.h"
+@@ -396,13 +399,33 @@ void BrowserDesktopWindowTreeHostWin::HandleCreate() {
+       BrowserWindowPropertyManager::CreateBrowserWindowPropertyManager(
+           browser_view_, GetHWND());
+ 
+-  // Use the profile icon as the browser window icon, if there is more
+-  // than one profile. This makes alt-tab preview tabs show the profile-specific
+-  // icon in the multi-profile case.
+-  if (g_browser_process->profile_manager()
+-          ->GetProfileAttributesStorage()
+-          .GetNumberOfProfiles() > 1) {
+-    SetWindowIcon(/*badged=*/true);
++  // Check if Simprint environment ID is provided via command line
++  base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
++  if (command_line->HasSwitch(switches::kSimprintEnvId)) {
++    std::string env_id = command_line->GetSwitchValueASCII(switches::kSimprintEnvId);
++    std::string display_id = command_line->GetSwitchValueASCII(switches::kSimprintDisplayId);
++
++    LOG(INFO) << "[Simprint] Setting custom window icon for env_id: " << env_id
++              << ", display_id: " << display_id;
++
++    // Generate or get icon path, then set window icon
++    base::FilePath user_data_dir = browser_view_->GetProfile()->GetPath().DirName();
++
++    base::FilePath icon_path = simprint::WindowIconManager::GenerateOrGetIconPath(
++        user_data_dir, env_id, display_id);
++
++    if (!icon_path.empty()) {
++      simprint::WindowIconManager::SetWindowIcon(GetHWND(), icon_path);
++    }
++  } else {
++    // Use the profile icon as the browser window icon, if there is more
++    // than one profile. This makes alt-tab preview tabs show the profile-specific
++    // icon in the multi-profile case.
++    if (g_browser_process->profile_manager()
++            ->GetProfileAttributesStorage()
++            .GetNumberOfProfiles() > 1) {
++      SetWindowIcon(/*badged=*/true);
++    }
+   }
+ }
+ 

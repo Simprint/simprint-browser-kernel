@@ -1,0 +1,17 @@
+diff --git a/chrome/common/chrome_switches.cc b/chrome/common/chrome_switches.cc
+index ec68419022e14..b75f527f80549 100644
+--- a/chrome/common/chrome_switches.cc
++++ b/chrome/common/chrome_switches.cc
+@@ -944,6 +944,12 @@ const char kUninstallAppId[] = "uninstall-app-id";
+ // method, as older PWA launchers still using this switch will rely on Chrome to
+ // update them to use the new method.
+ const char kPwaLauncherVersion[] = "pwa-launcher-version";
++
++// Specifies the Simprint environment ID (UUID).
++const char kSimprintEnvId[] = "simprint-env-id";
++
++// Specifies the Simprint display ID (numeric) to display on the taskbar badge.
++const char kSimprintDisplayId[] = "simprint-display-id";
+ #endif  // BUILDFLAG(IS_WIN)
+ 
+ #if BUILDFLAG(ENABLE_PRINT_PREVIEW) && !defined(OFFICIAL_BUILD)
