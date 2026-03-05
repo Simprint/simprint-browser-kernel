@@ -37,12 +37,6 @@ struct IpApiConfig {
 };
 
 constexpr IpApiConfig kIpApis[] = {
-    // ip-api.com - Full geolocation, 45 requests/minute free
-    {
-        "http://ip-api.com/json/?fields=status,message,country,countryCode,region,regionName,city,isp,query,timezone",
-        "query", "country", "countryCode", "city", "regionName", "isp",
-        "timezone", "status", "success"
-    },
     // ipapi.co - Full geolocation, 1000 requests/day free
     {
         "https://ipapi.co/json/",
@@ -57,7 +51,7 @@ constexpr IpApiConfig kIpApis[] = {
     },
     // realip.cc - Chinese service with full geolocation
     {
-        "https://realip.cc/",
+        "https://realip.cc/json",
         "ip", "country", "iso_code", "city", "province", "isp",
         "time_zone", nullptr, nullptr
     },

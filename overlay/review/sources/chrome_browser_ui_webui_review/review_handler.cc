@@ -23,7 +23,7 @@ namespace {
 // List of IP detection APIs to try in order
 constexpr std::array<const char*, 3> kIpApis = {
     "https://ipapi.co/json/",
-    "https://ip-api.com/json/",
+    "https://realip.cc/json",
     "https://ipinfo.io/json",
 };
 
@@ -233,14 +233,14 @@ void ReviewPageHandler::OnIpFetchComplete(
     if (org) info->isp = *org;
     if (timezone) info->timezone = *timezone;
   } else if (current_api_index_ == 1) {
-    // ip-api.com format
-    const std::string* ip = dict.FindString("query");
+    // realip.cc format
+    const std::string* ip = dict.FindString("ip");
     const std::string* country = dict.FindString("country");
-    const std::string* country_code = dict.FindString("countryCode");
+    const std::string* country_code = dict.FindString("iso_code");
     const std::string* city = dict.FindString("city");
-    const std::string* region = dict.FindString("regionName");
+    const std::string* region = dict.FindString("province");
     const std::string* isp = dict.FindString("isp");
-    const std::string* timezone = dict.FindString("timezone");
+    const std::string* timezone = dict.FindString("time_zone");
 
     if (ip) info->ip = *ip;
     if (country) info->country = *country;
