@@ -1,0 +1,4 @@
+# Account 模块补丁应用顺序
+# 账号自动导入到密码管理器功能
+
+001-eventbus-account-import.patch

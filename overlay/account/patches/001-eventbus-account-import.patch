@@ -1,0 +1,145 @@
+diff --git a/simprint/eventbus/eventbus.cc b/simprint/eventbus/eventbus.cc
+index 7ce431c14b02f..410d13e8697c3 100644
+--- a/simprint/eventbus/eventbus.cc
++++ b/simprint/eventbus/eventbus.cc
+@@ -36,6 +36,12 @@
+ #include "content/public/browser/web_contents.h"
+ #include "content/public/common/isolated_world_ids.h"
+ #include "content/public/common/url_constants.h"
++#include "components/password_manager/core/browser/import/csv_password.h"
++#include "components/password_manager/core/browser/import/password_importer.h"
++#include "components/password_manager/core/browser/ui/saved_passwords_presenter.h"
++#include "chrome/browser/password_manager/account_password_store_factory.h"
++#include "chrome/browser/password_manager/profile_password_store_factory.h"
++#include "chrome/browser/affiliations/affiliation_service_factory.h"
+ 
+ // 统一日志输出
+ #define SIMPRINT_LOG(msg) LOG(INFO) << "[Simprint][EventBus] " << msg
+@@ -461,6 +467,127 @@ void EventBus::HandleHandshakeResponse(const Message& message) {
+       SIMPRINT_LOG("  - " << key << ": " << val_str.str());
+     }
+ 
++    // 处理账号导入
++    const base::Value::List* accounts = config.FindList("accounts");
++    if (accounts && !accounts->empty()) {
++      SIMPRINT_LOG("LaunchConfig: 发现 " << accounts->size() << " 个账号，准备导入");
++
++      // 构造 CSVPassword 列表和 URL 列表
++      std::vector<password_manager::CSVPassword> csv_passwords;
++      std::vector<GURL> account_urls;
++      for (const auto& account_value : *accounts) {
++        if (!account_value.is_dict()) {
++          continue;
++        }
++
++        const base::Value::Dict& account = account_value.GetDict();
++        const std::string* url = account.FindString("url");
++        const std::string* username = account.FindString("username");
++        const std::string* password = account.FindString("password");
++
++        if (!url || !username || !password) {
++          SIMPRINT_LOG("LaunchConfig: 账号数据不完整，跳过");
++          continue;
++        }
++
++        GURL gurl(*url);
++        if (!gurl.is_valid()) {
++          SIMPRINT_LOG("LaunchConfig: 无效的 URL: " << *url);
++          continue;
++        }
++
++        csv_passwords.emplace_back(
++            gurl,
++            *username,
++            *password,
++            "",  // note
++            password_manager::CSVPassword::Status::kOK);
++
++        account_urls.push_back(gurl);
++
++        SIMPRINT_LOG("LaunchConfig: 添加账号 " << *username << " @ " << *url);
++      }
++
++      // 在 UI 线程执行密码导入和标签页打开
++      if (!csv_passwords.empty()) {
++        content::GetUIThreadTaskRunner({})->PostTask(
++            FROM_HERE,
++            base::BindOnce(
++                [](std::vector<password_manager::CSVPassword> passwords,
++                   std::vector<GURL> urls) {
++                  ProfileManager* profile_manager = g_browser_process->profile_manager();
++                  if (!profile_manager) {
++                    SIMPRINT_LOG("LaunchConfig: ProfileManager 不可用");
++                    return;
++                  }
++
++                  std::vector<Profile*> profiles = profile_manager->GetLoadedProfiles();
++                  if (profiles.empty()) {
++                    SIMPRINT_LOG("LaunchConfig: 没有加载的 Profile");
++                    return;
++                  }
++
++                  Profile* profile = profiles[0];
++
++                  // 创建 SavedPasswordsPresenter
++                  auto* affiliation_service = AffiliationServiceFactory::GetForProfile(profile);
++                  auto profile_store = ProfilePasswordStoreFactory::GetForProfile(
++                      profile, ServiceAccessType::EXPLICIT_ACCESS);
++                  auto account_store = AccountPasswordStoreFactory::GetForProfile(
++                      profile, ServiceAccessType::EXPLICIT_ACCESS);
++
++                  auto presenter = std::make_unique<password_manager::SavedPasswordsPresenter>(
++                      affiliation_service, profile_store, account_store);
++                  presenter->Init();
++
++                  // 创建 PasswordImporter（不需要用户确认）
++                  auto importer = std::make_unique<password_manager::PasswordImporter>(
++                      presenter.get(), false);
++
++                  SIMPRINT_LOG("LaunchConfig: 开始导入 " << passwords.size() << " 个密码");
++
++                  // 导入密码到 Profile Store
++                  importer->Import(
++                      passwords,
++                      password_manager::PasswordForm::Store::kProfileStore,
++                      base::BindOnce(
++                          [](std::unique_ptr<password_manager::SavedPasswordsPresenter> presenter,
++                             std::unique_ptr<password_manager::PasswordImporter> importer,
++                             std::vector<GURL> urls,
++                             const password_manager::ImportResults& results) {
++                            SIMPRINT_LOG("LaunchConfig: 密码导入完成，状态="
++                                << static_cast<int>(results.status));
++                            SIMPRINT_LOG("LaunchConfig: 导入数量=" << results.number_imported);
++
++                            // 打开账号对应的标签页
++                            if (results.status == password_manager::ImportResults::Status::SUCCESS) {
++                              ProfileManager* profile_manager = g_browser_process->profile_manager();
++                              if (profile_manager) {
++                                std::vector<Profile*> profiles = profile_manager->GetLoadedProfiles();
++                                if (!profiles.empty()) {
++                                  Profile* profile = profiles[0];
++                                  Browser* browser = chrome::FindTabbedBrowser(profile, false);
++                                  if (browser) {
++                                    for (const GURL& url : urls) {
++                                      SIMPRINT_LOG("LaunchConfig: 打开标签页 " << url.spec());
++                                      chrome::AddTabAt(browser, url, -1, false);
++                                    }
++                                  }
++                                }
++                              }
++                            }
++
++                            // presenter 和 importer 会在这里自动销毁
++                          },
++                          std::move(presenter),
++                          std::move(importer),
++                          std::move(urls)));
++                },
++                std::move(csv_passwords),
++                std::move(account_urls)));
++      }
++    }
++
+     // 注意：这些配置在浏览器启动后接收，大部分配置（如 user_data_dir、proxy）
+     // 需要在启动时通过命令行参数设置，这里接收主要用于验证配置是否正确传递
+     // 未来可能用于动态配置更新（如扩展加载）
