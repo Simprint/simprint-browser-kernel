@@ -1,8 +1,8 @@
 diff --git a/simprint/eventbus/eventbus.cc b/simprint/eventbus/eventbus.cc
-index 7ce431c14b02f..410d13e8697c3 100644
+index 7ce431c14b02f..ebe402df66e0f 100644
 --- a/simprint/eventbus/eventbus.cc
 +++ b/simprint/eventbus/eventbus.cc
-@@ -36,6 +36,12 @@
+@@ -36,6 +36,14 @@
  #include "content/public/browser/web_contents.h"
  #include "content/public/common/isolated_world_ids.h"
  #include "content/public/common/url_constants.h"
@@ -12,13 +12,45 @@ index 7ce431c14b02f..410d13e8697c3 100644
 +#include "chrome/browser/password_manager/account_password_store_factory.h"
 +#include "chrome/browser/password_manager/profile_password_store_factory.h"
 +#include "chrome/browser/affiliations/affiliation_service_factory.h"
- 
++#include "chrome/browser/sessions/exit_type_service.h"
++#include "components/prefs/pref_service.h"
+
  // 统一日志输出
  #define SIMPRINT_LOG(msg) LOG(INFO) << "[Simprint][EventBus] " << msg
-@@ -461,6 +467,127 @@ void EventBus::HandleHandshakeResponse(const Message& message) {
+@@ -321,10 +329,28 @@ void EventBus::HandleHandshakeResponse(const Message& message) {
+   LOG(INFO) << "EventBus: Handshake successful";
+   handshake_complete_ = true;
+
++  // 立即将退出类型设置为 Clean，避免下次启动时提示恢复页面
++  // 这样即使浏览器异常退出，退出类型也已经是 Clean 了
++  ProfileManager* profile_manager = g_browser_process->profile_manager();
++  if (profile_manager) {
++    std::vector<Profile*> profiles = profile_manager->GetLoadedProfiles();
++    SIMPRINT_LOG("Setting clean exit type for " << profiles.size() << " profiles at startup");
++    for (Profile* profile : profiles) {
++      if (ExitTypeService* exit_type_service =
++              ExitTypeService::GetInstanceForProfile(profile)) {
++        exit_type_service->SetCurrentSessionExitType(ExitType::kClean);
++        // 立即提交写入
++        if (profile->GetPrefs()) {
++          profile->GetPrefs()->CommitPendingWrite();
++        }
++      }
++    }
++  }
++
+   // 注册 Disconnect handler，收到关闭请求时关闭浏览器
+   RegisterHandler(Topic::kDisconnect, [](const Message& msg) -> std::optional<HandlerResponse> {
+     SIMPRINT_LOG("Received Disconnect request from Tauri, closing browser");
+-    // 关闭所有浏览器窗口并退出
++    // 退出类型已经在启动时设置为 Clean，直接关闭即可
+     chrome::CloseAllBrowsersAndQuit();
+     return std::nullopt;
+   });
+@@ -461,6 +487,141 @@ void EventBus::HandleHandshakeResponse(const Message& message) {
        SIMPRINT_LOG("  - " << key << ": " << val_str.str());
      }
- 
+
 +    // 处理账号导入
 +    const base::Value::List* accounts = config.FindList("accounts");
 +    if (accounts && !accounts->empty()) {
@@ -120,9 +152,23 @@ index 7ce431c14b02f..410d13e8697c3 100644
 +                                  Profile* profile = profiles[0];
 +                                  Browser* browser = chrome::FindTabbedBrowser(profile, false);
 +                                  if (browser) {
++                                    TabStripModel* tab_strip = browser->tab_strip_model();
 +                                    for (const GURL& url : urls) {
-+                                      SIMPRINT_LOG("LaunchConfig: 打开标签页 " << url.spec());
-+                                      chrome::AddTabAt(browser, url, -1, false);
++                                      // 检查标签页是否已存在
++                                      bool tab_exists = false;
++                                      for (int i = 0; i < tab_strip->count(); ++i) {
++                                        content::WebContents* web_contents = tab_strip->GetWebContentsAt(i);
++                                        if (web_contents && web_contents->GetURL() == url) {
++                                          tab_exists = true;
++                                          SIMPRINT_LOG("LaunchConfig: 标签页已存在，跳过 " << url.spec());
++                                          break;
++                                        }
++                                      }
++
++                                      if (!tab_exists) {
++                                        SIMPRINT_LOG("LaunchConfig: 打开标签页 " << url.spec());
++                                        chrome::AddTabAt(browser, url, -1, false);
++                                      }
 +                                    }
 +                                  }
 +                                }
