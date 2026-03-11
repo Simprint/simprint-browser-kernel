@@ -1,0 +1,22 @@
+diff --git a/net/socket/ssl_connect_job_unittest.cc b/net/socket/ssl_connect_job_unittest.cc
+index dc81162177ae4..0c3c08c514051 100644
+--- a/net/socket/ssl_connect_job_unittest.cc
++++ b/net/socket/ssl_connect_job_unittest.cc
+@@ -5,6 +5,7 @@
+ #include "net/socket/ssl_connect_job.h"
+ 
+ #include <memory>
++#include <optional>
+ #include <string>
+ 
+ #include "base/compiler_specific.h"
+@@ -140,7 +141,8 @@ class SSLConnectJobTest : public WithTaskEnvironment, public testing::Test {
+     return base::MakeRefCounted<SOCKSSocketParams>(
+         ConnectJobParams(CreateProxyTransportSocketParams(secure_dns_policy)),
+         kSocksProxyServer.scheme() == ProxyServer::SCHEME_SOCKS5,
+-        kSocksProxyServer.host_port_pair(), NetworkAnonymizationKey(),
++        kSocksProxyServer.host_port_pair(), std::nullopt,
++        NetworkAnonymizationKey(),
+         TRAFFIC_ANNOTATION_FOR_TESTS);
+   }
+ 

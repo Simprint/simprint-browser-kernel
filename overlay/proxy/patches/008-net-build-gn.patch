@@ -1,0 +1,13 @@
+diff --git a/net/BUILD.gn b/net/BUILD.gn
+index c7f7017a5f90f..d9240b557e993 100644
+--- a/net/BUILD.gn
++++ b/net/BUILD.gn
+@@ -992,6 +992,8 @@ component("net") {
+     "socket/socket_tag.h",
+     "socket/socks5_client_socket.cc",
+     "socket/socks5_client_socket.h",
++    "socket/socks5_auth_cache.cc",
++    "socket/socks5_auth_cache.h",
+     "socket/socks_client_socket.cc",
+     "socket/socks_client_socket.h",
+     "socket/socks_connect_job.cc",

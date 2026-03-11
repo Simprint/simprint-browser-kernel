@@ -1,0 +1,16 @@
+diff --git a/chrome/browser/net/proxy_config_monitor.h b/chrome/browser/net/proxy_config_monitor.h
+index 6c060b52d2579..a5e97910c1b8f 100644
+--- a/chrome/browser/net/proxy_config_monitor.h
++++ b/chrome/browser/net/proxy_config_monitor.h
+@@ -50,6 +50,11 @@ class ProxyConfigMonitor : public net::ProxyConfigService::Observer,
+   // associated with a profile. Must be destroyed before |local_state|.
+   explicit ProxyConfigMonitor(PrefService* local_state);
+ 
++  // Creates a ProxyConfigMonitor with a custom ProxyConfigService.
++  // Used by Simprint to provide dynamic proxy configuration.
++  explicit ProxyConfigMonitor(
++      std::unique_ptr<net::ProxyConfigService> proxy_config_service);
++
+   ProxyConfigMonitor(const ProxyConfigMonitor&) = delete;
+   ProxyConfigMonitor& operator=(const ProxyConfigMonitor&) = delete;
+ 

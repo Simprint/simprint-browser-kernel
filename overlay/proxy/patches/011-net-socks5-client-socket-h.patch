@@ -1,0 +1,63 @@
+diff --git a/net/socket/socks5_client_socket.h b/net/socket/socks5_client_socket.h
+index fe8da4858d692..86d306496b10a 100644
+--- a/net/socket/socks5_client_socket.h
++++ b/net/socket/socks5_client_socket.h
+@@ -9,9 +9,11 @@
+ #include <stdint.h>
+ 
+ #include <memory>
++#include <optional>
+ #include <string>
+ 
+ #include "base/memory/scoped_refptr.h"
++#include "net/base/auth.h"
+ #include "net/base/address_list.h"
+ #include "net/base/completion_once_callback.h"
+ #include "net/base/completion_repeating_callback.h"
+@@ -28,7 +30,6 @@ class DrainableIOBuffer;
+ class GrowableIOBuffer;
+ 
+ // This StreamSocket is used to setup a SOCKSv5 handshake with a socks proxy.
+-// Currently no SOCKSv5 authentication is supported.
+ class NET_EXPORT_PRIVATE SOCKS5ClientSocket : public StreamSocket {
+  public:
+   // |destination| contains the hostname and port to which the socket above will
+@@ -39,6 +40,7 @@ class NET_EXPORT_PRIVATE SOCKS5ClientSocket : public StreamSocket {
+   // proxy side.
+   SOCKS5ClientSocket(std::unique_ptr<StreamSocket> transport_socket,
+                      const HostPortPair& destination,
++                     std::optional<AuthCredentials> credentials,
+                      const NetworkTrafficAnnotationTag& traffic_annotation);
+ 
+   SOCKS5ClientSocket(const SOCKS5ClientSocket&) = delete;
+@@ -82,6 +84,10 @@ class NET_EXPORT_PRIVATE SOCKS5ClientSocket : public StreamSocket {
+     STATE_GREET_WRITE_COMPLETE,
+     STATE_GREET_READ,
+     STATE_GREET_READ_COMPLETE,
++    STATE_AUTH_WRITE,
++    STATE_AUTH_WRITE_COMPLETE,
++    STATE_AUTH_READ,
++    STATE_AUTH_READ_COMPLETE,
+     STATE_HANDSHAKE_WRITE,
+     STATE_HANDSHAKE_WRITE_COMPLETE,
+     STATE_HANDSHAKE_READ,
+@@ -116,6 +122,11 @@ class NET_EXPORT_PRIVATE SOCKS5ClientSocket : public StreamSocket {
+   int DoGreetReadComplete(int result);
+   int DoGreetWrite();
+   int DoGreetWriteComplete(int result);
++  int DoAuthWrite();
++  int DoAuthWriteComplete(int result);
++  int DoAuthRead();
++  int DoAuthReadComplete(int result);
++  scoped_refptr<DrainableIOBuffer> BuildAuthWriteBuffer() const;
+ 
+   // Creates a DrainableIOBuffer containing the SOCKS handshake.
+   scoped_refptr<DrainableIOBuffer> BuildHandshakeWriteBuffer() const;
+@@ -144,6 +155,7 @@ class NET_EXPORT_PRIVATE SOCKS5ClientSocket : public StreamSocket {
+   bool was_ever_used_ = false;
+ 
+   const HostPortPair destination_;
++  const std::optional<AuthCredentials> credentials_;
+ 
+   NetLogWithSource net_log_;
+ 

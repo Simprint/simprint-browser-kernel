@@ -1,0 +1,29 @@
+diff --git a/net/socket/socks_connect_job_unittest.cc b/net/socket/socks_connect_job_unittest.cc
+index ab91851dac4c1..8297827f5b8d9 100644
+--- a/net/socket/socks_connect_job_unittest.cc
++++ b/net/socket/socks_connect_job_unittest.cc
+@@ -4,6 +4,8 @@
+ 
+ #include "net/socket/socks_connect_job.h"
+ 
++#include <optional>
++
+ #include "base/containers/flat_set.h"
+ #include "base/containers/span.h"
+ #include "base/functional/callback.h"
+@@ -86,6 +88,7 @@ class SOCKSConnectJobTest : public testing::Test, public WithTaskEnvironment {
+         socks_version == SOCKSVersion::V4
+             ? HostPortPair(kSOCKS4TestHost, kSOCKS4TestPort)
+             : HostPortPair(kSOCKS5TestHost, kSOCKS5TestPort),
++        std::nullopt,
+         NetworkAnonymizationKey(), TRAFFIC_ANNOTATION_FOR_TESTS);
+   }
+ 
+@@ -135,6 +138,7 @@ TEST_F(SOCKSConnectJobTest, HostResolutionFailureSOCKS4Endpoint) {
+                 OnHostResolutionCallback(),
+                 /*supported_alpns=*/base::flat_set<std::string>())),
+             false /* socks_v5 */, HostPortPair(hostname, kSOCKS4TestPort),
++            std::nullopt,
+             NetworkAnonymizationKey(), TRAFFIC_ANNOTATION_FOR_TESTS);
+ 
+     TestConnectJobDelegate test_delegate;

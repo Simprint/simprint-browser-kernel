@@ -1,0 +1,28 @@
+diff --git a/chrome/browser/net/proxy_config_monitor.cc b/chrome/browser/net/proxy_config_monitor.cc
+index 50e7a07af841f..17750a15f1b79 100644
+--- a/chrome/browser/net/proxy_config_monitor.cc
++++ b/chrome/browser/net/proxy_config_monitor.cc
+@@ -71,11 +71,22 @@ ProxyConfigMonitor::ProxyConfigMonitor(PrefService* local_state) {
+   proxy_config_service_->AddObserver(this);
+ }
+ 
++ProxyConfigMonitor::ProxyConfigMonitor(
++    std::unique_ptr<net::ProxyConfigService> proxy_config_service)
++    : proxy_config_service_(std::move(proxy_config_service)) {
++  DCHECK(BrowserThread::CurrentlyOn(BrowserThread::UI) ||
++         !BrowserThread::IsThreadInitialized(BrowserThread::UI));
++  DCHECK(proxy_config_service_);
++  proxy_config_service_->AddObserver(this);
++}
++
+ ProxyConfigMonitor::~ProxyConfigMonitor() {
+   DCHECK(BrowserThread::CurrentlyOn(BrowserThread::UI) ||
+          !BrowserThread::IsThreadInitialized(BrowserThread::UI));
+   proxy_config_service_->RemoveObserver(this);
+-  pref_proxy_config_tracker_->DetachFromPrefService();
++  if (pref_proxy_config_tracker_) {
++    pref_proxy_config_tracker_->DetachFromPrefService();
++  }
+ }
+ 
+ void ProxyConfigMonitor::AddToNetworkContextParams(

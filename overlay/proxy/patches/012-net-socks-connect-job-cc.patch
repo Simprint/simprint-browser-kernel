@@ -1,0 +1,26 @@
+diff --git a/net/socket/socks_connect_job.cc b/net/socket/socks_connect_job.cc
+index 79862bda68ff8..2b8484a2b2046 100644
+--- a/net/socket/socks_connect_job.cc
++++ b/net/socket/socks_connect_job.cc
+@@ -28,11 +28,13 @@ SOCKSSocketParams::SOCKSSocketParams(
+     ConnectJobParams nested_params,
+     bool socks_v5,
+     const HostPortPair& host_port_pair,
++    std::optional<AuthCredentials> socks5_credentials,
+     const NetworkAnonymizationKey& network_anonymization_key,
+     const NetworkTrafficAnnotationTag& traffic_annotation)
+     : transport_params_(nested_params.take_transport()),
+       destination_(host_port_pair),
+       socks_v5_(socks_v5),
++      socks5_credentials_(std::move(socks5_credentials)),
+       network_anonymization_key_(network_anonymization_key),
+       traffic_annotation_(traffic_annotation) {}
+ 
+@@ -187,6 +189,7 @@ int SOCKSConnectJob::DoSOCKSConnect() {
+   if (socks_params_->is_socks_v5()) {
+     socket_ = std::make_unique<SOCKS5ClientSocket>(
+         transport_connect_job_->PassSocket(), socks_params_->destination(),
++        socks_params_->socks5_credentials(),
+         socks_params_->traffic_annotation());
+   } else {
+     // TODO(crbug.com/393349123): Handle resolved DNS aliases for socks4.

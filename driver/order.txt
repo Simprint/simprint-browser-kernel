@@ -7,3 +7,4 @@ auth
 fingerprint
 review
 account
+proxy

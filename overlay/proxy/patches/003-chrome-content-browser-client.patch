@@ -1,0 +1,69 @@
+diff --git a/chrome/browser/chrome_content_browser_client.cc b/chrome/browser/chrome_content_browser_client.cc
+index bc78819660e36..96dfe96ac2cc5 100644
+--- a/chrome/browser/chrome_content_browser_client.cc
++++ b/chrome/browser/chrome_content_browser_client.cc
+@@ -138,6 +138,9 @@
+ #include "chrome/browser/preloading/search_preload/search_preload_features.h"
+ #include "chrome/browser/privacy_sandbox/privacy_sandbox_settings_factory.h"
+ #include "chrome/browser/privacy_sandbox/tracking_protection_settings_factory.h"
++#include "content/public/browser/login_delegate.h"
++#include "simprint/proxy/network_context_configurator.h"
++#include "simprint/simprint_browser_context.h"
+ #include "chrome/browser/profiles/profile.h"
+ #include "chrome/browser/profiles/profile_io_data.h"
+ #include "chrome/browser/profiles/profile_manager.h"
+@@ -783,6 +786,29 @@ std::string& GetIOThreadApplicationLocale() {
+   return *s;
+ }
+ 
++class SimprintProxyLoginDelegate : public content::LoginDelegate {
++ public:
++  SimprintProxyLoginDelegate(
++      const net::AuthCredentials& credentials,
++      LoginAuthRequiredCallback auth_required_callback) {
++    base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
++        FROM_HERE,
++        base::BindOnce(&SimprintProxyLoginDelegate::Respond,
++                       weak_factory_.GetWeakPtr(), credentials,
++                       std::move(auth_required_callback)));
++  }
++
++  ~SimprintProxyLoginDelegate() override = default;
++
++ private:
++  void Respond(const net::AuthCredentials& credentials,
++               LoginAuthRequiredCallback auth_required_callback) {
++    std::move(auth_required_callback).Run(credentials);
++  }
++
++  base::WeakPtrFactory<SimprintProxyLoginDelegate> weak_factory_{this};
++};
++
+ // Returns a copy of the given url with its host set to given host and path set
+ // to given path. Other parts of the url will be the same.
+ GURL ReplaceURLHostAndPath(const GURL& url,
+@@ -6815,6 +6841,24 @@ ChromeContentBrowserClient::CreateLoginDelegate(
+     bool first_auth_attempt,
+     content::GuestPageHolder* guest,
+     content::LoginDelegate::LoginAuthRequiredCallback auth_required_callback) {
++#if BUILDFLAG(IS_WIN)
++  if (base::CommandLine::ForCurrentProcess()->HasSwitch("simprint-env-id") &&
++      auth_info.is_proxy) {
++    LOG(INFO) << "Intercepted proxy auth challenge for Simprint browser";
++    auto* simprint_context = simprint::SimprintBrowserContext::GetInstance();
++    if (simprint_context && simprint_context->network_context_configurator()) {
++      std::optional<net::AuthCredentials> credentials =
++          simprint_context->network_context_configurator()
++              ->GetProxyAuthCredentials(auth_info, first_auth_attempt);
++      if (credentials) {
++        return std::make_unique<SimprintProxyLoginDelegate>(
++            *credentials, std::move(auth_required_callback));
++      }
++    }
++    LOG(INFO) << "Falling back to Chromium default proxy auth handling";
++  }
++#endif
++
+ #if BUILDFLAG(IS_CHROMEOS)
+   // Negotiate challenge is handled via GSSAPI library, which can not receive
+   // external credentials. However, on ChromeOS we can suggest the user to

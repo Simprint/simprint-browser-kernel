@@ -1,0 +1,27 @@
+# Copyright 2024 The Simprint Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+import("//build/config/features.gni")
+
+# Main Simprint target that aggregates all components
+group("simprint") {
+  public_deps = [
+    ":browser_context",
+    "//simprint/eventbus",
+    "//simprint/proxy",
+  ]
+}
+
+source_set("browser_context") {
+  sources = [
+    "simprint_browser_context.cc",
+    "simprint_browser_context.h",
+  ]
+
+  deps = [
+    "//base",
+    "//simprint/eventbus",
+    "//simprint/proxy",
+  ]
+}

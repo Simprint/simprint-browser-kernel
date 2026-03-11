@@ -1,0 +1,12 @@
+diff --git a/chrome/browser/BUILD.gn b/chrome/browser/BUILD.gn
+index 96392ab48d995..0e8558f511fa5 100644
+--- a/chrome/browser/BUILD.gn
++++ b/chrome/browser/BUILD.gn
+@@ -1816,6 +1816,7 @@ static_library("browser") {
+     ":shell_integration",
+     ":unexpire_flags",
+     "//base",
++    "//simprint",
+     "//base:build_time",
+     "//base:i18n",
+     "//base/allocator:buildflags",

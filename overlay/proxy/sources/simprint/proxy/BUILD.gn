@@ -1,0 +1,29 @@
+# Copyright 2024 The Simprint Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+import("//build/config/features.gni")
+
+source_set("proxy") {
+  sources = [
+    "network_context_configurator.cc",
+    "network_context_configurator.h",
+    "proxy_config_parser.cc",
+    "proxy_config_parser.h",
+    "proxy_config_service.cc",
+    "proxy_config_service.h",
+    "proxy_config_service_wrapper.cc",
+    "proxy_config_service_wrapper.h",
+    "proxy_message_handler.cc",
+    "proxy_message_handler.h",
+  ]
+
+  deps = [
+    "//base",
+    "//content/public/browser",
+    "//net",
+    "//services/network/public/mojom",
+    "//simprint/eventbus",
+    "//url",
+  ]
+}
