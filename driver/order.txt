@@ -8,3 +8,4 @@ fingerprint
 review
 account
 proxy
+cookie
