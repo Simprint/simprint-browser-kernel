@@ -4,6 +4,10 @@ __pycache__/
 *.py[cod]
 *.pyo
 
+# Local config
+driver/driver.config
+overlay/branding/branding.config
+
 # Local / test
 *-rendered.patch
 
