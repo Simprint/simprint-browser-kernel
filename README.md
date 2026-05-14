@@ -50,19 +50,6 @@ cp driver/driver.config.example driver/driver.config
 uv run python -m driver apply-and-prepare
 ```
 
-Set `SIMPRINT_CHROMIUM_ROOT` in `driver/driver.config` to your Chromium source root, for example:
-
-```ini
-SIMPRINT_CHROMIUM_ROOT=<browser-source-root>
-```
-
-To run only a specific unit:
-
-```bash
-uv run python -m driver apply --project branding
-uv run python -m driver deploy --project branding
-```
-
 After preparation, build Chromium in your external source tree with your usual `gn` and `autoninja` workflow.
 
 ## Status

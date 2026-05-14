@@ -50,19 +50,6 @@ cp driver/driver.config.example driver/driver.config
 uv run python -m driver apply-and-prepare
 ```
 
-请在 `driver/driver.config` 中将 `SIMPRINT_CHROMIUM_ROOT` 指向你的 Chromium 源码根目录，例如：
-
-```ini
-SIMPRINT_CHROMIUM_ROOT=<browser-source-root>
-```
-
-如果只想执行某一个单元：
-
-```bash
-uv run python -m driver apply --project branding
-uv run python -m driver deploy --project branding
-```
-
 完成准备后，请在外部 Chromium 源码树中按你现有的 `gn` 和 `autoninja` 工作流继续构建。
 
 ## Status
