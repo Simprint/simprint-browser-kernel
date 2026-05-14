@@ -52,6 +52,12 @@ uv run python -m driver apply-and-prepare
 
 完成准备后，请在外部 Chromium 源码树中按你现有的 `gn` 和 `autoninja` 工作流继续构建。
 
+## Version Baseline
+
+当前仓库内容是基于 Chromium `144.0.7559.118` 进行改造并完成验证的。
+
+如果你将这些 overlay 应用到其他 Chromium 版本上，可能还需要额外处理补丁冲突、源码漂移或构建失败等问题。
+
 ## Status
 
 Simprint Browser Kernel 目前正在作为 Simprint 整体开源重构工作的一部分持续整理。

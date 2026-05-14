@@ -52,6 +52,12 @@ uv run python -m driver apply-and-prepare
 
 After preparation, build Chromium in your external source tree with your usual `gn` and `autoninja` workflow.
 
+## Version Baseline
+
+The current browser-kernel content is adapted against and validated on Chromium `144.0.7559.118`.
+
+If you apply these overlays to a different Chromium revision, patch conflicts, source drift, or build breakage may need to be resolved separately.
+
 ## Status
 
 Simprint Browser Kernel is being prepared as part of the broader Simprint open-source refactoring effort.
