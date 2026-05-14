@@ -173,5 +173,3 @@ deps = [
 ## See Also
 
 - [Parent README](../README.md) - Simprint browser overview
-- [EventBus](../eventbus/README.md) - EventBus framework
-- [Implementation Guide](../../../../plan/FINAL_IMPLEMENTATION.md) - Detailed implementation

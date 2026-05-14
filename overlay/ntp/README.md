@@ -39,16 +39,3 @@
 
 - **背景动画**: 六边形网格和流动光带动画效果
 - **simprint_ip**: 后端 IP 检测功能（保留但前端不再使用）
-
-## 统一入口
-
-由 driver 调用：`uv run python overlay/ntp/run.py apply|deploy|apply_deploy|build`。
-
-- **apply**：打补丁。
-- **deploy**：执行 `scripts/deploy_resources.py`，复制 simprint_ip/ 和 resources/ 到 Chromium。
-- **apply_deploy**：先 apply 再 deploy，一次完成。
-- **build**：当前无操作。
-
-## 补丁调试与修复
-
-参考 `overlay/branding/README.md` 中的"补丁调试与修复步骤"。

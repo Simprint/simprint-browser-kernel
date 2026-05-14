@@ -1,26 +1,14 @@
-"""命令行入口：apply、deploy、build、apply-and-prepare，可选 --project。"""
+"""命令行入口：按 driver/order.txt 执行标准浏览器内核流水线。"""
 import argparse
 
 from . import runner
 from .config import get_chromium_src, get_repo_root
 
 
-def _parse_project_list(s: str | None) -> list[str] | None:
-    if s is None or s.strip() == "":
-        return None
-    return [p.strip() for p in s.split(",") if p.strip()]
-
-
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Simprint 定制流水线：按 driver/order.txt 执行 integration、overlay、projects 的 apply / deploy / build",
+        description="Simprint 定制流水线：按 driver/order.txt 顺序执行各 overlay 单元的 apply / deploy / build",
         prog="python -m driver",
-    )
-    parser.add_argument(
-        "--project",
-        "-p",
-        metavar="NAME",
-        help="仅处理指定单元（逗号分隔），如 integration,branding,fingerprint",
     )
     parser.add_argument(
         "--out-dir",
@@ -37,21 +25,20 @@ def main() -> None:
     sub.add_parser("apply-and-prepare", help="先 apply 再 deploy（全单元各跑一遍）")
 
     args = parser.parse_args()
-    project_filter = _parse_project_list(args.project)
     repo_root = get_repo_root()
     chromium_src = get_chromium_src()
     out_dir = getattr(args, "out_dir", None)
 
     if args.command == "apply":
-        runner.run_phase(repo_root, chromium_src, "apply", project_filter, out_dir)
+        runner.run_phase(repo_root, chromium_src, "apply", out_dir)
     elif args.command == "deploy":
-        runner.run_phase(repo_root, chromium_src, "deploy", project_filter, out_dir)
+        runner.run_phase(repo_root, chromium_src, "deploy", out_dir)
     elif args.command == "apply-deploy":
-        runner.run_phase(repo_root, chromium_src, "apply_deploy", project_filter, out_dir)
+        runner.run_phase(repo_root, chromium_src, "apply_deploy", out_dir)
     elif args.command == "build":
-        runner.run_phase(repo_root, chromium_src, "build", project_filter, out_dir)
+        runner.run_phase(repo_root, chromium_src, "build", out_dir)
     elif args.command == "apply-and-prepare":
-        runner.run_phase(repo_root, chromium_src, "apply_deploy", project_filter, out_dir)
+        runner.run_phase(repo_root, chromium_src, "apply_deploy", out_dir)
         print("Apply and prepare done. Next: gn gen and build in Chromium.")
 
 

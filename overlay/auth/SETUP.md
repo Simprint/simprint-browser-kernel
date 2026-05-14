@@ -25,37 +25,6 @@
 - `apply_order.txt` - 补丁应用顺序
 - `README.md` - 模块说明文档
 
-## 使用方法
-
-### 1. 更新 driver/order.txt
-
-在 `simprint-browser-kernel/driver/order.txt` 中添加：
-
-```
-overlay/syner
-overlay/auth
-```
-
-注意：auth 必须在 syner 之后，因为它依赖 EventBus 和 console_log。
-
-### 2. 运行 driver
-
-```bash
-cd simprint-browser-kernel
-python driver/run.py apply_deploy
-```
-
-这将：
-1. 按顺序应用所有模块的补丁
-2. 部署所有模块的源文件到 Chromium 源码目录
-
-### 3. 编译 Chromium
-
-```bash
-cd <chromium_src>
-autoninja -C out/Default chrome
-```
-
 ## 功能说明
 
 ### 启动认证检查
@@ -80,26 +49,6 @@ autoninja -C out/Default chrome
 此模块基于 simprint-browser 仓库的以下提交：
 - `879a342` - feat(auth): 添加启动认证检查和 LaunchConfig 支持
 - `9be2688` - Remove SIMPRINT_LOG calls from sync input handlers
-
-## 验证
-
-模块创建完成后，可以通过以下方式验证：
-
-1. 检查文件结构：
-```bash
-ls -R simprint-browser-kernel/overlay/auth/
-```
-
-2. 查看补丁内容：
-```bash
-cat simprint-browser-kernel/overlay/auth/patches/*.patch
-```
-
-3. 测试运行：
-```bash
-cd simprint-browser-kernel
-python overlay/auth/run.py apply_deploy
-```
 
 ## 注意事项
 

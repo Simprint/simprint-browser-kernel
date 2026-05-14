@@ -2,12 +2,7 @@
 
 ## Purpose
 
-This module migrates the proxy feature set from:
-
-- `simprint-browser/src`
-- commit `4fb8aadb1ceab45e405905887476e2e5be65ee46`
-
-into the kernel repository structure.
+This module migrates the proxy feature set from an earlier internal Chromium customization baseline into the kernel repository structure.
 
 It contains only the proxy-related delta from that commit.
 

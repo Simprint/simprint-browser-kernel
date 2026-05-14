@@ -132,13 +132,6 @@ source_set("proxy") {
 - Add integration tests for cross-module functionality
 - Test EventBus message handling
 
-## Documentation
-
-- [Proxy Implementation](../../../plan/FINAL_IMPLEMENTATION.md)
-- [Conflict Resolution](../../../plan/CONFLICT_RESOLUTION.md)
-- [Directory Structure](../../../plan/DIRECTORY_STRUCTURE.md)
-- [Tauri Implementation](../../../plan/TAURI_IMPLEMENTATION.md)
-
 ## License
 
-Copyright 2024 The Chromium Authors. All rights reserved.
+This directory is part of the `simprint-browser-kernel` repository and follows the repository-level license.

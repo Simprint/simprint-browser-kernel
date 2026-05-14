@@ -56,23 +56,6 @@ overlay/syner/
         └── sync_input_replay.{cc,h}
 ```
 
-## 使用方法
-
-### 1. 应用补丁
-```bash
-python overlay/syner/run.py apply
-```
-
-### 2. 部署源文件
-```bash
-python overlay/syner/run.py deploy
-```
-
-### 3. 一键应用并部署
-```bash
-python overlay/syner/run.py apply_deploy
-```
-
 ## 技术细节
 
 ### EventBus 架构
@@ -122,9 +105,9 @@ python overlay/syner/run.py apply_deploy
 
 ## 依赖关系
 
-- **前置模块**：integration, branding, ntp
-- **后续模块**：fingerprint, shared
-- **独立性**：可独立启用/禁用，不依赖 NTP 功能
+- **前置模块**：branding, ntp
+- **后续模块**：auth, fingerprint, review, account, proxy, cookie
+- **执行方式**：应按 `driver/order.txt` 的整体顺序运行，不建议将本模块作为独立公开工作流单独执行
 
 ## 注意事项
 

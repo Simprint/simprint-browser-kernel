@@ -71,25 +71,6 @@ overlay/auth/
 Auth 模块依赖以下模块（需要在 `driver/order.txt` 中先执行）：
 - **syner**: 提供 EventBus IPC 通信基础设施和 console_log
 
-## 使用方法
-
-### 1. 在 driver/order.txt 中添加
-```
-overlay/syner
-overlay/auth
-```
-
-### 2. 运行 driver
-```bash
-python driver/run.py apply_deploy
-```
-
-### 3. 编译 Chromium
-```bash
-cd <chromium_src>
-autoninja -C out/Default chrome
-```
-
 ## 认证流程
 
 ```

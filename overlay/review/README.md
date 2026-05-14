@@ -62,21 +62,6 @@ overlay/review/
 └── README.md         # 本文件
 ```
 
-## 使用方法
-
-由 driver 自动调用，或手动执行：
-
-```bash
-# 应用补丁
-python overlay/review/run.py apply
-
-# 部署资源文件
-python overlay/review/run.py deploy
-
-# 应用补丁 + 部署资源
-python overlay/review/run.py apply_deploy
-```
-
 ## 技术细节
 
 ### 窗口图标徽章

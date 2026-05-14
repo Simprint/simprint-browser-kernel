@@ -32,17 +32,6 @@
 - **保留补丁**: 10 个
 - **最终 simprint_ntp.ts**: 120 行（纯背景动画）
 
-### 使用方式
-```bash
-# 应用修改
-cd simprint-browser-kernel
-uv run python -m driver apply --project ntp
-uv run python -m driver deploy --project ntp
-
-# 或一次性完成
-uv run python -m driver apply-and-prepare --project ntp
-```
-
 ### 效果
 新标签页现在只显示：
 - 干净的背景动画（六边形网格 + 流动光带）

@@ -1,4 +1,4 @@
-"""按 driver/order.txt 顺序调用 integration、overlay、projects 下各单元的 run.py <phase>。"""
+"""按 driver/order.txt 顺序调用各 overlay 单元的 run.py <phase>。"""
 import os
 import subprocess
 import sys
@@ -19,22 +19,17 @@ def _read_order(repo_root: Path) -> list[str]:
 
 
 def _unit_dir(repo_root: Path, name: str) -> Path | None:
-    """根据 order.txt 中的名称解析实际目录：integration、overlay/<name>、projects/<name>。"""
-    if name == "integration":
-        d = repo_root / "integration"
-        return d if d.is_dir() else None
+    """根据 order.txt 中的名称解析实际目录。"""
     overlay_d = repo_root / "overlay" / name
     if overlay_d.is_dir():
         return overlay_d
-    projects_d = repo_root / "projects" / name
-    return projects_d if projects_d.is_dir() else None
+    return None
 
 
 def run_phase(
     repo_root: Path,
     chromium_src: Path,
     phase: str,
-    project_filter: list[str] | None = None,
     out_dir: str | None = None,
 ) -> None:
     """
@@ -45,11 +40,6 @@ def run_phase(
     if not order:
         print("No units in driver/order.txt", file=sys.stderr)
         return
-    if project_filter:
-        order = [p for p in order if p in project_filter]
-        if not order:
-            print("No matching units for filter.", file=sys.stderr)
-            return
 
     env = {
         **os.environ,
