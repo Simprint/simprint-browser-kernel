@@ -1,9 +1,0 @@
-# Simprint Auth Overlay - Patch Application Order
-# 认证功能模块：启动认证检查 + LaunchConfig 支持
-# 基于 simprint-browser commit: 879a342
-
-001-chrome-browser-build-gn.patch
-002-chrome-browser-main.patch
-003-eventbus-topics-h.patch
-004-eventbus-h.patch
-005-eventbus-cc.patch

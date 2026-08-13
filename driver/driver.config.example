@@ -1,6 +1,0 @@
-# Simprint 定制流水线配置示例
-# 复制为 driver.config 后按需修改；或设置环境变量 SIMPRINT_CHROMIUM_ROOT。
-
-# Chromium 源码根目录（含 chrome/VERSION、out/ 的目录）
-# 例如：<browser-source-root> 或 D:/chromium
-SIMPRINT_CHROMIUM_ROOT=

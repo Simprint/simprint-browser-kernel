@@ -1,83 +1,55 @@
-<div align="center">
-  <h1>Simprint Browser Kernel</h1>
-  <p>Patch pipeline, overlay modules, and release preparation layer for Simprint Chromium builds.</p>
-  <p>
-    <img alt="Python 3.11+" src="https://img.shields.io/badge/python-3.11%2B-3776ab?style=flat-square&labelColor=0f172a" />
-    <img alt="Package Manager uv" src="https://img.shields.io/badge/package%20manager-uv-22c55e?style=flat-square&labelColor=0f172a" />
-    <img alt="Base Chromium" src="https://img.shields.io/badge/base-Chromium-2563eb?style=flat-square&labelColor=0f172a" />
-  </p>
-  <p>
-    <strong>English</strong> | <a href="./README.zh-CN.md">简体中文</a>
-  </p>
-</div>
+# Simprint Browser Kernel
 
----
+`main` is the documentation-only landing branch for the Simprint Chromium
+kernel project. It intentionally contains no kernel implementation, patch
+pipeline, or Chromium source tree.
 
-## Introduction
+`main` 是 Simprint Chromium 内核项目的纯文档入口分支。内核实现、版本适配
+和 Chromium 源码不会放在此分支。
 
-Simprint Browser Kernel is the browser-kernel layer used to customize Chromium for Simprint. It does not ship Chromium source code itself. Instead, it provides the patch flow, overlay modules, resource deployment logic, and release preparation steps that are applied onto a separately managed Chromium source tree.
+## Kernel branches / 内核分支
 
-This repository exists to keep Chromium-facing customization isolated from the desktop client and runtime repositories. By moving branding, patch orchestration, and browser-side feature overlays into a dedicated repository, Simprint can evolve its browser kernel more explicitly and maintain upstream upgrades with clearer boundaries.
+| Branch | Chromium baseline | Purpose |
+| --- | --- | --- |
+| [`simprint/m144`](https://github.com/Simprint/simprint-browser-kernel/tree/simprint/m144) | `144.0.7559.118` | Chromium 144 integration and migration branch |
 
-## Why Simprint Browser Kernel?
+Each supported Chromium milestone uses a Git branch named `simprint/mXXX`.
+Branches own the complete version-specific integration state; milestones are
+not copied into version directories on `main`.
 
-Maintaining a Chromium-based product usually becomes difficult when product changes are spread across ad hoc patches, local scripts, and unrelated application repositories. That makes upgrades harder, review more fragile, and build behavior less reproducible.
+每个受支持的 Chromium 大版本使用一个 `simprint/mXXX` 分支。每个分支负责该
+版本完整的接入状态，不在 `main` 中建立重复的版本目录。
 
-Simprint Browser Kernel is intended to make that layer more disciplined. It keeps the browser customization path explicit, treats Chromium as an external source dependency, and provides a small driver-based workflow for applying overlays in a repeatable order.
+## Target architecture / 目标架构
 
-## Features
-
-- **External Chromium workflow**: Keep Chromium source code outside this repository and apply Simprint-specific changes onto a separately managed source tree.
-- **Driver-based pipeline**: Use `python -m driver` commands to run `apply`, `deploy`, `build`, or combined preparation flows in a fixed order.
-- **Overlay modules**: Organize browser customizations into units such as `branding`, `ntp`, `syner`, `auth`, `fingerprint`, `review`, `account`, `proxy`, and `cookie`.
-- **Patch and resource deployment**: Support both source patching and follow-up deployment work such as copying assets or syncing build arguments.
-- **Template-ready customization**: Use repository-managed scripts and configuration files instead of scattering browser branding logic into one-off manual edits.
-- **Structured customization flow**: Keep browser-kernel changes organized through explicit driver and overlay boundaries.
-
-## Quick Start
-
-### Prerequisites
-
-- Python 3.11+
-- `uv`
-- A separate Chromium source tree managed outside this repository
-
-### Run locally
-
-```bash
-uv sync
-cp driver/driver.config.example driver/driver.config
-uv run python -m driver apply-and-prepare
+```text
+Chromium upstream tag
+        │
+        ▼
+simprint/mXXX              Simprint Core
+        │                       │
+        ├── integration commits ├── stable versioned API
+        ├── kernel adapter      └── independently released
+        └── buildable source state
 ```
 
-After preparation, build Chromium in your external source tree with your usual `gn` and `autoninja` workflow.
+The milestone branch itself is the build input. A build must not depend on
+replaying a repository-wide patch queue every time. Shared product behavior
+belongs in Simprint Core; Chromium-version-specific integration belongs in the
+milestone branch and its adapter.
 
-## Version Baseline
+版本分支本身应当成为构建输入，不应在每次构建时重新执行整个 patch 队列。通用
+产品能力进入 Simprint Core；依赖 Chromium 版本的接入代码保留在对应版本分支
+及其 Adapter 中。
 
-The current browser-kernel content is adapted against and validated on Chromium `144.0.7559.118`.
+## Current migration status / 当前迁移状态
 
-If you apply these overlays to a different Chromium revision, patch conflicts, source drift, or build breakage may need to be resolved separately.
+`simprint/m144` currently preserves the legacy overlay and patch implementation
+as the migration starting point. It is not yet a complete Chromium source fork.
+The migration is complete only when the branch represents an integrated,
+directly buildable Chromium tree and the legacy patch queue is no longer the
+source of truth.
 
-## Status
-
-Simprint Browser Kernel is being prepared as part of the broader Simprint open-source refactoring effort.
-
-The repository is already used to manage Simprint-specific Chromium customization, but its structure, documentation, and release-facing conventions are still being cleaned up for long-term external collaboration.
-
-## Contributing
-
-Issues and pull requests are welcome.
-
-High-value contribution areas currently include:
-
-- Patch organization and upgrade safety improvements
-- Build and release workflow cleanup
-- Overlay module documentation
-- Chromium upgrade validation and regression checks
-- Tooling that reduces manual browser-kernel maintenance work
-
-## License
-
-This project is licensed under the GNU Affero General Public License v3.0 (AGPLv3).
-
-If you want to use Simprint Browser Kernel in a way that does not comply with the AGPLv3 obligations, including distributing modified versions or providing modified versions as a closed-source service, please contact us for a commercial license.
+`simprint/m144` 当前仍保留旧 overlay/patch 实现，作为迁移起点；它还不是完整的
+Chromium 源码分支。只有当该分支成为可直接构建的集成源码，并且旧 patch 队列
+不再是真实来源时，迁移才算完成。

@@ -1,5 +1,0 @@
-# Cookie module patch application order
-# Generated from:
-# 4fb8aadb1ceab45e405905887476e2e5be65ee46..9baa250511ea5c70d718c0ad558400ca2a52985b
-
-001-eventbus-launch-cookies.patch
