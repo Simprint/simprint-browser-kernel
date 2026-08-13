@@ -1,0 +1,63 @@
+name: Chromium port contract
+
+on:
+  push:
+    branches:
+      - main
+      - "simprint/m*"
+      - "refactor/**"
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      report_format:
+        description: Validation output format
+        required: true
+        default: text
+        type: choice
+        options:
+          - text
+          - json
+
+permissions:
+  contents: read
+
+concurrency:
+  group: port-contract-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Validate port metadata and patch integrity
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version-file: .python-version
+
+      - name: Install locked dependencies
+        run: uv sync --frozen
+
+      - name: Validate branch-local Chromium port
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.report_format == 'text' }}
+        run: uv run python -m driver validate
+
+      - name: Validate branch-local Chromium port as JSON
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.report_format == 'json' }}
+        run: uv run python -m driver validate --json
+
+      - name: Run contract tests
+        run: uv run python -m unittest discover -s tests -v
+
+      - name: Check whitespace errors
+        run: git diff --check HEAD

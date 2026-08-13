@@ -52,9 +52,27 @@ uv run python -m driver apply-and-prepare
 
 After preparation, build Chromium in your external source tree with your usual `gn` and `autoninja` workflow.
 
+### Validate the current kernel branch
+
+Each Git branch represents one Chromium baseline. Its exact version, Core API,
+and capability state are recorded in `port/manifest.toml`.
+
+```bash
+uv run python -m driver validate
+uv run python -m unittest discover -s tests -v
+uv run python -m driver plan --features fingerprint
+```
+
+See the [Chromium branch, Core, and Port model](./docs/port-model.md) for the
+migration and maintenance policy.
+
 ## Version Baseline
 
 The current browser-kernel content is adapted against and validated on Chromium `144.0.7559.118`.
+
+`port/manifest.toml` is the machine-readable baseline for the current branch.
+A new Chromium milestone belongs on a new `simprint/mXXX` branch rather than in
+a copied version directory.
 
 If you apply these overlays to a different Chromium revision, patch conflicts, source drift, or build breakage may need to be resolved separately.
 

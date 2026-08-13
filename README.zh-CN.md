@@ -52,9 +52,23 @@ uv run python -m driver apply-and-prepare
 
 完成准备后，请在外部 Chromium 源码树中按你现有的 `gn` 和 `autoninja` 工作流继续构建。
 
+### 校验当前内核分支
+
+每个 Git 分支只表示一个 Chromium 基线，具体版本、Core API 和能力状态记录在 `port/manifest.toml`。提交变更前运行：
+
+```bash
+uv run python -m driver validate
+uv run python -m unittest discover -s tests -v
+uv run python -m driver plan --features fingerprint
+```
+
+完整维护方式见[分支、Core 与 Port 维护模型](./docs/port-model.zh-CN.md)。
+
 ## Version Baseline
 
 当前仓库内容是基于 Chromium `144.0.7559.118` 进行改造并完成验证的。
+
+`port/manifest.toml` 是当前分支版本基线的机器可读来源；新的 Chromium milestone 应创建新的 `simprint/mXXX` 分支，而不是在同一分支中复制版本目录。
 
 如果你将这些 overlay 应用到其他 Chromium 版本上，可能还需要额外处理补丁冲突、源码漂移或构建失败等问题。
 

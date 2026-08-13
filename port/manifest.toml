@@ -1,0 +1,64 @@
+schema_version = 1
+
+[port]
+name = "simprint-chromium"
+chromium_version = "144.0.7559.118"
+chromium_milestone = 144
+core_api = 1
+
+# One branch represents one Chromium port. Do not add milestone directories
+# below this file; create a branch such as simprint/m145 instead.
+
+[[capabilities]]
+id = "branding"
+overlay = "branding"
+state = "legacy-patch"
+requires = []
+
+[[capabilities]]
+id = "new-tab-page"
+overlay = "ntp"
+state = "legacy-patch"
+requires = []
+
+[[capabilities]]
+id = "eventbus-input-sync"
+overlay = "syner"
+state = "legacy-patch"
+requires = []
+
+[[capabilities]]
+id = "startup-auth"
+overlay = "auth"
+state = "legacy-patch"
+requires = ["eventbus-input-sync"]
+
+[[capabilities]]
+id = "fingerprint"
+overlay = "fingerprint"
+state = "legacy-patch"
+requires = ["eventbus-input-sync", "startup-auth"]
+
+[[capabilities]]
+id = "review-ui"
+overlay = "review"
+state = "legacy-patch"
+requires = ["eventbus-input-sync", "fingerprint"]
+
+[[capabilities]]
+id = "account-import"
+overlay = "account"
+state = "legacy-patch"
+requires = ["eventbus-input-sync"]
+
+[[capabilities]]
+id = "runtime-proxy"
+overlay = "proxy"
+state = "legacy-patch"
+requires = ["eventbus-input-sync", "startup-auth"]
+
+[[capabilities]]
+id = "launch-cookies"
+overlay = "cookie"
+state = "legacy-patch"
+requires = ["eventbus-input-sync", "account-import"]

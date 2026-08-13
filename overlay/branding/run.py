@@ -9,6 +9,11 @@ import sys
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parent
+KERNEL_ROOT = PROJECT_ROOT.parent.parent
+if str(KERNEL_ROOT) not in sys.path:
+    sys.path.insert(0, str(KERNEL_ROOT))
+
+from driver.patching import read_normalized_patch  # noqa: E402
 
 
 def _chromium_src() -> Path:
@@ -117,18 +122,17 @@ def apply_() -> None:
             if not rendered.endswith("\n"):
                 rendered += "\n"
             r = subprocess.run(
-                ["patch", "-p1"],
+                ["patch", "--batch", "--forward", "-p1"],
                 cwd=chromium_src,
                 input=rendered.encode("utf-8"),
                 capture_output=True,
             )
         else:
             r = subprocess.run(
-                ["patch", "-p1"],
+                ["patch", "--batch", "--forward", "-p1"],
                 cwd=chromium_src,
-                stdin=patch_file.open("rb"),
+                input=read_normalized_patch(patch_file),
                 capture_output=True,
-                text=False,
             )
         if r.returncode != 0:
             out = r.stdout.decode("utf-8", errors="replace")
